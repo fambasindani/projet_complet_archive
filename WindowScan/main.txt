@@ -1,0 +1,169 @@
+using System;
+using System.Net;
+using System.Threading;
+using System.Windows.Forms;
+
+namespace WindowScan
+{
+    static class Program
+    {
+        private static Form6 scannerForm;
+        private static HttpListener httpListener;
+        private static Thread httpThread;
+        private static bool isRunning = true;
+
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            // Démarrer le serveur HTTP pour React
+            StartHttpServer();
+
+            // Créer et afficher le formulaire
+            scannerForm = new Form6();
+
+            // Configurer les callbacks
+            scannerForm.OnLog += (message) =>
+                Console.WriteLine($"[Scanner] {message}");
+
+            scannerForm.OnScanComplete += (pdfPath, success) =>
+            {
+                Console.WriteLine($"[Scanner] Scan terminé - Succès: {success}, PDF: {pdfPath}");
+            };
+
+            // Cacher la fenêtre
+            scannerForm.ShowInTaskbar = false;
+            scannerForm.WindowState = FormWindowState.Minimized;
+            scannerForm.Show();
+
+            Console.WriteLine("🚀 Scanner Windows démarré");
+            Console.WriteLine("API disponible sur: http://localhost:9000/");
+            Console.WriteLine("Laravel API: http://localhost:8000/api/scans/upload");
+
+            // Démarrer la boucle d'application
+            Application.Run(scannerForm);
+        }
+
+        private static void StartHttpServer()
+        {
+            try
+            {
+                httpListener = new HttpListener();
+                httpListener.Prefixes.Add("http://localhost:9000/");
+
+                httpThread = new Thread(() =>
+                {
+                    try
+                    {
+                        httpListener.Start();
+                        Console.WriteLine("🌐 Serveur HTTP démarré sur http://localhost:9000/");
+
+                        while (isRunning && httpListener.IsListening)
+                        {
+                            try
+                            {
+                                var context = httpListener.GetContext();
+                                ThreadPool.QueueUserWorkItem(ProcessRequest, context);
+                            }
+                            catch (HttpListenerException)
+                            {
+                                // Ignorer les erreurs d'arrêt
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Erreur serveur HTTP: {ex.Message}");
+                    }
+                });
+
+                httpThread.IsBackground = true;
+                httpThread.Start();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Impossible de démarrer le serveur HTTP: {ex.Message}");
+            }
+        }
+
+        private static void ProcessRequest(object state)
+        {
+            var context = (HttpListenerContext)state;
+
+            try
+            {
+                var request = context.Request;
+                var response = context.Response;
+
+                Console.WriteLine($"📨 Requête reçue: {request.HttpMethod} {request.Url.PathAndQuery}");
+
+                string responseString;
+                response.ContentType = "application/json";
+
+                if (request.HttpMethod == "POST" && request.Url.PathAndQuery == "/start-scan")
+                {
+                    if (scannerForm.IsScanningActive)
+                    {
+                        responseString = JsonResponse("error", "Un scan est déjà en cours");
+                    }
+                    else
+                    {
+                        // Démarrer le scan de manière asynchrone
+                        ThreadPool.QueueUserWorkItem(_ => scannerForm.StartScan());
+
+                        responseString = JsonResponse("success", "Scan démarré avec succès");
+                    }
+                }
+                else if (request.HttpMethod == "GET" && request.Url.PathAndQuery == "/status")
+                {
+                    responseString = $"{{\"status\":\"{(scannerForm.IsScanningActive ? "scanning" : "ready")}\"," +
+                                    $"\"isScanning\":{scannerForm.IsScanningActive.ToString().ToLower()}," +
+                                    $"\"message\":\"{(scannerForm.IsScanningActive ? "Scan en cours" : "Scanner disponible")}\"," +
+                                    $"\"timestamp\":\"{DateTime.Now:yyyy-MM-dd HH:mm:ss}\"}}";
+                }
+                else if (request.HttpMethod == "GET" && request.Url.PathAndQuery == "/health")
+                {
+                    responseString = JsonResponse("ok", "Service opérationnel");
+                }
+                else if (request.HttpMethod == "GET" && request.Url.PathAndQuery == "/")
+                {
+                    responseString = JsonResponse("ready", "Scanner Windows Service");
+                }
+                else
+                {
+                    response.StatusCode = 404;
+                    responseString = JsonResponse("error", "Endpoint non trouvé");
+                }
+
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+                response.ContentLength64 = buffer.Length;
+                response.OutputStream.Write(buffer, 0, buffer.Length);
+                response.OutputStream.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Erreur traitement requête: {ex.Message}");
+                context.Response.StatusCode = 500;
+                string errorResponse = JsonResponse("error", "Erreur interne du serveur");
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(errorResponse);
+                context.Response.OutputStream.Write(buffer, 0, buffer.Length);
+                context.Response.OutputStream.Close();
+            }
+        }
+
+        private static string JsonResponse(string status, string message)
+        {
+            return $"{{\"status\":\"{status}\",\"message\":\"{message}\",\"timestamp\":\"{DateTime.Now:yyyy-MM-dd HH:mm:ss}\"}}";
+        }
+
+        // Arrêter proprement le serveur
+        private static void StopHttpServer()
+        {
+            isRunning = false;
+            httpListener?.Stop();
+            httpListener?.Close();
+        }
+    }
+}
