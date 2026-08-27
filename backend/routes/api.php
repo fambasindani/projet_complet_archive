@@ -177,11 +177,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // --- Document Déclaration (PDF + OCR) ---
     Route::post('/documents-declaration/upload-multiple', [DocumentDeclarationController::class, 'uploadMultiple']);
-    Route::get('/documents/{id}', [DocumentDeclarationController::class, 'getallpdf']);
     Route::put('/documents-declaration/{id}/update-text', [DocumentDeclarationController::class, 'updateOCRText']);
     Route::get('/documents-declaration/{id}/text', [DocumentDeclarationController::class, 'getDocumentText']);
     Route::post('/documents-declaration/advanced-search/{id_direction}', [DocumentDeclarationController::class, 'advancedSearch']);
     Route::get('/documents-declaration/ocr-stats', [DocumentDeclarationController::class, 'getOCRStats']);
+    Route::post('/documents-declaration/{id}/ocr', [DocumentDeclarationController::class, 'ocrDocument']);
+    Route::get('/documents-declaration/ocr-health', [DocumentDeclarationController::class, 'ocrHealth']);
 
     // --- Déclarations ---
     Route::get('/declarations', [DeclarationController::class, 'getDeclarations']);
@@ -258,13 +259,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('delete-article/{id}', [ArticleBudgetaireController::class, 'deleteArticle'])->middleware('permission:supprimer_service_assiette');
 });
 
-// --- Document Note Perception (public download/delete) ---
-Route::get('/notes/downloads/{id}', [DocumentNotePerceptionController::class, 'download']);
-Route::get('/notes/download/{id}', [DocumentNotePerceptionController::class, 'getallpdf']);
-Route::delete('/notes/delete/{id}', [DocumentNotePerceptionController::class, 'deleteDocument']);
-Route::post('/notes/upload', [DocumentNotePerceptionController::class, 'uploadMultiple']);
-Route::put('/notes/{id}/update-text', [DocumentNotePerceptionController::class, 'updateOCRText']);
-
-// --- Document Déclaration (public download/delete) ---
-Route::get('/documents-declaration/download/{id}', [DocumentDeclarationController::class, 'download']);
-Route::delete('/delete-document/{id}', [DocumentDeclarationController::class, 'deleteDocument']);
+// --- Documents publics (sans Sanctum, CORS géré par le middleware global) ---
+Route::withoutMiddleware(\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class)->group(function () {
+    Route::get('/documents/{id}', [DocumentDeclarationController::class, 'getallpdf']);
+    Route::get('/documents-declaration/download/{id}', [DocumentDeclarationController::class, 'download']);
+    Route::delete('/delete-document/{id}', [DocumentDeclarationController::class, 'deleteDocument']);
+    Route::get('/notes/downloads/{id}', [DocumentNotePerceptionController::class, 'download']);
+    Route::get('/notes/download/{id}', [DocumentNotePerceptionController::class, 'getallpdf']);
+    Route::delete('/notes/delete/{id}', [DocumentNotePerceptionController::class, 'deleteDocument']);
+    Route::post('/notes/upload', [DocumentNotePerceptionController::class, 'uploadMultiple']);
+    Route::put('/notes/{id}/update-text', [DocumentNotePerceptionController::class, 'updateOCRText']);
+});

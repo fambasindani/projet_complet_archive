@@ -192,9 +192,9 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
     if (searchParams.sort_by !== field)
       return <FaSort className="text-slate-400" size={11} />;
     return searchParams.sort_order === "asc" ? (
-      <FaSortUp className="text-emerald-600" size={11} />
+      <FaSortUp className="text-indigo-600" size={11} />
     ) : (
-      <FaSortDown className="text-emerald-600" size={11} />
+      <FaSortDown className="text-indigo-600" size={11} />
     );
   };
 
@@ -263,7 +263,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
 
       <div className="relative bg-white rounded-[24px] shadow-2xl border border-slate-200 max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 px-6 py-5 flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-6 py-5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center shrink-0">
               <FaFileInvoice className="text-white" size={18} />
@@ -275,7 +275,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                   NP • OCR
                 </span>
               </h3>
-              <p className="text-xs font-medium text-emerald-50 mt-1">
+              <p className="text-xs font-medium text-indigo-50 mt-1">
                 Recherchez par n° série, article, assujetti ou dans le texte OCR
               </p>
             </div>
@@ -292,8 +292,8 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
         {/* Body */}
         <div className="overflow-y-auto p-6 space-y-6">
           {/* Info générale */}
-          <div className="bg-emerald-50/80 rounded-2xl border border-emerald-100 p-4 flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0 shadow">
+          <div className="bg-indigo-50/80 rounded-2xl border border-indigo-100 p-4 flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow">
               <FaInfoCircle className="text-white" size={14} />
             </div>
             <div className="min-w-0 flex-1">
@@ -304,7 +304,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                 Filtrez par classeur, assujetti, article budgétaire, période ou mots-clés OCR (montext). Tous les critères sont combinables.
               </p>
             </div>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-emerald-100 text-emerald-700 shrink-0">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-indigo-100 text-indigo-700 shrink-0">
               <FaSearch size={10} /> OCR • montext
             </span>
           </div>
@@ -312,7 +312,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
           {/* Formulaire */}
           <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 space-y-5">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
                 <FaFilter className="text-white" size={12} />
               </div>
               <h4 className="text-sm font-bold text-slate-900">Critères de recherche</h4>
@@ -333,7 +333,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                 />
                 <input
                   type="text"
-                  className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   placeholder="Mots-clés dans le contenu des documents…"
                   value={searchParams.query}
                   onChange={(e) =>
@@ -357,7 +357,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                   <FaFolder size={10} className="text-slate-400" /> Classeur
                 </label>
                 <select
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition disabled:opacity-60"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-60"
                   value={searchParams.id_classeur}
                   onChange={(e) =>
                     setSearchParams({
@@ -382,7 +382,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                   <FaUsers size={10} className="text-slate-400" /> Assujetti
                 </label>
                 <select
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition disabled:opacity-60"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-60"
                   value={searchParams.id_assujetti}
                   onChange={(e) =>
                     setSearchParams({
@@ -409,7 +409,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                   <FaTag size={10} className="text-slate-400" /> Article budgétaire
                 </label>
                 <select
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition disabled:opacity-60"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-60"
                   value={searchParams.numero_article}
                   onChange={(e) =>
                     setSearchParams({
@@ -436,7 +436,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="date"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                     value={searchParams.date_debut}
                     onChange={(e) =>
                       setSearchParams({
@@ -448,7 +448,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                   />
                   <input
                     type="date"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                     value={searchParams.date_fin}
                     onChange={(e) =>
                       setSearchParams({
@@ -473,7 +473,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
               <button
                 onClick={() => handleSearch(1)}
                 disabled={loading}
-                className="inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -491,8 +491,8 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
           {/* Loading */}
           {loading && (
             <div className="bg-white rounded-2xl border border-slate-200 p-10 flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-3">
-                <FaSpinner className="animate-spin text-emerald-600" size={20} />
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-3">
+                <FaSpinner className="animate-spin text-indigo-600" size={20} />
               </div>
               <p className="text-sm font-semibold text-slate-900">Recherche en cours…</p>
               <p className="text-xs font-medium text-slate-500 mt-1">Analyse des notes de perception</p>
@@ -504,7 +504,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h5 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center">
+                  <span className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
                     <FaFileAlt className="text-white" size={12} />
                   </span>
                   Documents trouvés
@@ -577,7 +577,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                                     }}
                                   />
                                 ) : doc.montext ? (
-                                  <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-emerald-600">
+                                  <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-indigo-600">
                                     <FaFileAlt size={10} /> Texte OCR disponible
                                   </span>
                                 ) : (
@@ -591,14 +591,14 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3.5">
+                           <td className="px-4 py-3.5">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 max-w-[180px] truncate">
-                              {getAssujettiNom(doc.note_info?.id_assujetti)}
+                              {doc.assujetti_nom || getAssujettiNom(doc.note_info?.id_assujetti)}
                             </span>
                           </td>
                           <td className="px-4 py-3.5">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-700 max-w-[180px] truncate">
-                              {getClasseurNom(doc.note_info?.id_classeur)}
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 border border-indigo-100 text-indigo-700 max-w-[180px] truncate">
+                              {doc.classeur_nom || getClasseurNom(doc.note_info?.id_classeur)}
                             </span>
                           </td>
                           <td className="px-4 py-3.5">
@@ -609,7 +609,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                           </td>
                           <td className="px-4 py-3.5 text-center">
                             {doc.montext ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 border border-emerald-100 text-emerald-700">
+                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 border border-indigo-100 text-indigo-700">
                                 <FaFileAlt size={10} /> OK
                               </span>
                             ) : (
@@ -620,50 +620,56 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const res = await axios.get(`${API_BASE_URL}/documents-declaration/download/${doc.id}`, {
-                                      headers: { Authorization: `Bearer ${token}` },
-                                      responseType: 'blob',
-                                    });
-                                    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-                                    window.open(url, '_blank');
-                                    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
-                                  } catch (e) {
-                                    toast.error(e.response?.data?.message || 'Impossible d\'ouvrir le document');
-                                  }
-                                }}
-                                title="Voir le PDF"
-                                className="w-8 h-8 inline-flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition"
-                              >
-                                <FaEye size={12} />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const res = await axios.get(`${API_BASE_URL}/documents-declaration/download/${doc.id}`, {
-                                      headers: { Authorization: `Bearer ${token}` },
-                                      responseType: 'blob',
-                                    });
-                                    const blob = new Blob([res.data], { type: 'application/pdf' });
-                                    const url = window.URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = doc.nom_native || `document-${doc.id}.pdf`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    a.remove();
-                                    window.URL.revokeObjectURL(url);
-                                  } catch (e) {
-                                    toast.error(e.response?.data?.message || 'Téléchargement impossible');
-                                  }
-                                }}
-                                title="Télécharger"
-                                className="w-8 h-8 inline-flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm"
-                              >
-                                <FaDownload size={12} />
-                              </button>
+                              {doc.doc_id ? (
+                                <>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        const res = await axios.get(`${API_BASE_URL}/notes/downloads/${doc.doc_id}`, {
+                                          headers: { Authorization: `Bearer ${token}` },
+                                          responseType: 'blob',
+                                        });
+                                        const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+                                      } catch (e) {
+                                        toast.error(e.response?.data?.message || 'Impossible d\'ouvrir le document');
+                                      }
+                                    }}
+                                    title="Voir le PDF"
+                                    className="w-8 h-8 inline-flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition"
+                                  >
+                                    <FaEye size={12} />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        const res = await axios.get(`${API_BASE_URL}/notes/downloads/${doc.doc_id}`, {
+                                          headers: { Authorization: `Bearer ${token}` },
+                                          responseType: 'blob',
+                                        });
+                                        const blob = new Blob([res.data], { type: 'application/pdf' });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = doc.nom_native || `document-${doc.doc_id}.pdf`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                        window.URL.revokeObjectURL(url);
+                                      } catch (e) {
+                                        toast.error(e.response?.data?.message || 'Téléchargement impossible');
+                                      }
+                                    }}
+                                    title="Télécharger"
+                                    className="w-8 h-8 inline-flex items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-sm"
+                                  >
+                                    <FaDownload size={12} />
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-[11px] font-medium text-slate-400 italic">Aucun PDF</span>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -723,7 +729,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
                               onClick={() => handleSearch(pageNum)}
                               className={`w-9 h-9 rounded-xl text-sm font-semibold transition ${
                                 pagination.current_page === pageNum
-                                  ? "bg-slate-900 text-white shadow"
+                                  ? "bg-indigo-600 text-white shadow"
                                   : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
                               }`}
                             >
@@ -767,7 +773,7 @@ const AdvancedSearchNoteModal = ({ isOpen, onClose, token }) => {
               <p className="mt-1 text-sm font-medium text-slate-500 max-w-md mx-auto">
                 Utilisez les filtres ci-dessus pour rechercher dans les notes de perception. Ajoutez au moins un critère et lancez la recherche.
               </p>
-              <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full">
+              <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full">
                 <FaInfoCircle size={11} /> Astuce : essayez un mot-clé présent dans le texte OCR
               </div>
             </div>

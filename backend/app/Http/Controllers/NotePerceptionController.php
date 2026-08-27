@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\DocumentDeclaration;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\NotePerception;
 use App\Helpers\LogHelper;
 
@@ -200,231 +201,146 @@ public function searchnote_idcentre(Request $request, $id)
 
 public function advancedSearch(Request $request)
 {
-    // Récupérer les paramètres
-    $query = $request->input('query');
-    $id_classeur = $request->input('id_classeur');
-    $id_assujetti = $request->input('id_assujetti');
-    $numero_article = $request->input('numero_article');
-    $date_debut = $request->input('date_debut');
-    $date_fin = $request->input('date_fin');
-    $page = $request->input('page', 1);
-    $per_page = $request->input('per_page', 10);
-    $sort_by = $request->input('sort_by', 'note_perceptions.date_ordonnancement');
-    $sort_order = $request->input('sort_order', 'desc');
+    try {
+        $query = $request->input('query');
+        $id_classeur = $request->input('id_classeur');
+        $id_assujetti = $request->input('id_assujetti');
+        $numero_article = $request->input('numero_article');
+        $date_debut = $request->input('date_debut');
+        $date_fin = $request->input('date_fin');
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 10);
+        $sort_by = $request->input('sort_by', 'date_ordonnancement');
+        $sort_order = $request->input('sort_order', 'desc');
 
-    Log::info('=== RECHERCHE AVANCÉE NOTES DE PERCEPTION ===');
-    Log::info('Query: ' . ($query ?? 'aucun'));
-    Log::info('ID Classeur: ' . ($id_classeur ?? 'aucun'));
-    Log::info('ID Assujetti: ' . ($id_assujetti ?? 'aucun'));
-    Log::info('Numéro Article: ' . ($numero_article ?? 'aucun'));
+        Log::info('=== RECHERCHE AVANCEE NOTES ===');
+        Log::info('Params:', compact('query', 'id_classeur', 'id_assujetti', 'numero_article'));
 
-    // Construire la requête sur DocumentDeclaration avec jointure vers NotePerception
-    $queryBuilder = DocumentDeclaration::query();
+        $qb = NotePerception::query();
 
-    // 🔗 JOINTURE AVEC NOTE_PERCEPTION (id_declaration = note_perceptions.id)
-    $queryBuilder->join('note_perceptions', 'document_declarations.id_declaration', '=', 'note_perceptions.id');
+        $qb->with(['assujetti', 'classeur', 'emplacement', 'utilisateur']);
 
-    // 🔍 RECHERCHE DANS LE TEXTE OCR (montext)
-    if ($query) {
-        $queryBuilder->where(function ($q) use ($query) {
-            $q->where('document_declarations.montext', 'LIKE', "%{$query}%")
-              ->orWhere('document_declarations.nom_native', 'LIKE', "%{$query}%")
-              ->orWhere('document_declarations.nom_fichier', 'LIKE', "%{$query}%")
-              ->orWhere('note_perceptions.numero_serie', 'LIKE', "%{$query}%")
-              ->orWhere('note_perceptions.numero_article', 'LIKE', "%{$query}%");
-        });
-    }
-
-    // 🏷️ FILTRES SUR NOTE_PERCEPTION
-    if ($id_classeur) {
-        $queryBuilder->where('note_perceptions.id_classeur', $id_classeur);
-    }
-
-    if ($id_assujetti) {
-        $queryBuilder->where('note_perceptions.id_assujetti', $id_assujetti);
-    }
-
-    if ($numero_article) {
-        $queryBuilder->where('note_perceptions.numero_article', 'LIKE', "%{$numero_article}%");
-    }
-
-    // 📅 FILTRES PAR DATE SUR NOTE_PERCEPTION
-    if ($date_debut) {
-        $queryBuilder->whereDate('note_perceptions.date_ordonnancement', '>=', $date_debut);
-    }
-
-    if ($date_fin) {
-        $queryBuilder->whereDate('note_perceptions.date_ordonnancement', '<=', $date_fin);
-    }
-
-    // 📊 SÉLECTIONNER LES CHAMPS DES DEUX TABLES
-    $queryBuilder->select(
-        'document_declarations.*',
-        'note_perceptions.id as note_id',
-        'note_perceptions.numero_serie',
-        'note_perceptions.numero_article',
-        'note_perceptions.date_ordonnancement',
-        'note_perceptions.id_assujetti',
-        'note_perceptions.id_centre_ordonnancement',
-        'note_perceptions.id_classeur as note_classeur_id',
-        'note_perceptions.statut as note_statut'
-    );
-
-    // 📊 TRI - CORRECTION ICI
-    if ($sort_by === 'classeur_nom') {
-        $queryBuilder->leftJoin('classeurs', 'note_perceptions.id_classeur', '=', 'classeurs.id')
-                     ->orderBy('classeurs.nom_classeur', $sort_order);
-    } elseif ($sort_by === 'assujetti_nom') {
-        $queryBuilder->leftJoin('assujettis', 'note_perceptions.id_assujetti', '=', 'assujettis.id')
-                     ->orderBy('assujettis.nom_raison_sociale', $sort_order);
-    } elseif ($sort_by === 'centre_nom') {
-        $queryBuilder->leftJoin('centre_ordonnancements', 'note_perceptions.id_centre_ordonnancement', '=', 'centre_ordonnancements.id')
-                     ->orderBy('centre_ordonnancements.nom', $sort_order);
-    } elseif ($sort_by === 'date_ordonnancement') {
-        // ✅ CORRECTION: Trier par la colonne de note_perceptions
-        $queryBuilder->orderBy('note_perceptions.date_ordonnancement', $sort_order);
-    } elseif ($sort_by === 'id') {
-        $queryBuilder->orderBy('document_declarations.id', $sort_order);
-    } elseif ($sort_by === 'created_at') {
-        $queryBuilder->orderBy('document_declarations.created_at', $sort_order);
-    } elseif ($sort_by === 'taille') {
-        $queryBuilder->orderBy('document_declarations.taille', $sort_order);
-    } elseif ($sort_by === 'nom_native') {
-        $queryBuilder->orderBy('document_declarations.nom_native', $sort_order);
-    } else {
-        // Par défaut, trier par date_ordonnancement de la note
-        $queryBuilder->orderBy('note_perceptions.date_ordonnancement', $sort_order);
-    }
-
-    // 📄 PAGINATION
-    $documents = $queryBuilder->with([
-            'declaration.departement', 
-            'declaration.classeur'
-        ])
-        ->where('document_declarations.id_declaration', '>', 0) // S'assurer que la jointure est valide
-        ->paginate($per_page, ['*'], 'page', $page);
-
-    // TRANSFORMER LES DONNÉES
-    $documents->getCollection()->transform(function ($doc) use ($query) {
-        // Ajouter les infos de la note
-        $doc->note_info = [
-            'id' => $doc->note_id,
-            'numero_serie' => $doc->numero_serie,
-            'numero_article' => $doc->numero_article,
-            'date_ordonnancement' => $doc->date_ordonnancement,
-            'id_assujetti' => $doc->id_assujetti,
-            'id_centre' => $doc->id_centre_ordonnancement,
-            'id_classeur' => $doc->note_classeur_id,
-            'statut' => $doc->note_statut
-        ];
-
-        // Ajouter les infos de déclaration si existantes
-        if ($doc->declaration) {
-            $doc->declaration_info = [
-                'id' => $doc->declaration->id,
-                'intitule' => $doc->declaration->intitule,
-                'num_reference' => $doc->declaration->num_reference
-            ];
-            
-            if ($doc->declaration->departement) {
-                $doc->direction_nom = $doc->declaration->departement->nom;
-            }
-            
-            if ($doc->declaration->classeur) {
-                $doc->classeur_nom = $doc->declaration->classeur->nom_classeur;
-            }
+        if ($query) {
+            $escaped = addcslashes($query, '%_\\');
+            $qb->where(function ($q) use ($escaped) {
+                $q->where('note_perceptions.numero_serie', 'LIKE', "%{$escaped}%")
+                  ->orWhere('note_perceptions.numero_article', 'LIKE', "%{$escaped}%")
+                  ->orWhereHas('assujetti', function ($sq) use ($escaped) {
+                      $sq->where('nom_raison_sociale', 'LIKE', "%{$escaped}%");
+                  })
+                  ->orWhereHas('classeur', function ($sq) use ($escaped) {
+                      $sq->where('nom_classeur', 'LIKE', "%{$escaped}%");
+                  })
+                  ->orWhereExists(function ($sq) use ($escaped) {
+                      $sq->select(DB::raw(1))
+                         ->from('document_note_perceptions as dd')
+                         ->whereRaw('dd.id_note_perception = note_perceptions.id')
+                         ->where(function ($wq) use ($escaped) {
+                             $wq->where('dd.montext', 'LIKE', "%{$escaped}%")
+                                ->orWhere('dd.nom_native', 'LIKE', "%{$escaped}%");
+                         });
+                  });
+            });
         }
 
-        // Compter le nombre de documents par note (pour les stats)
-        static $noteDocuments = [];
-        $noteId = $doc->note_id;
-        
-        if (!isset($noteDocuments[$noteId])) {
-            $noteDocuments[$noteId] = [
-                'total' => 1,
-                'avec_ocr' => !empty($doc->montext) ? 1 : 0
-            ];
+        if ($id_classeur) {
+            $qb->where('note_perceptions.id_classeur', $id_classeur);
+        }
+        if ($id_assujetti) {
+            $qb->where('note_perceptions.id_assujetti', $id_assujetti);
+        }
+        if ($numero_article) {
+            $qb->where('note_perceptions.numero_article', 'LIKE', "%{$numero_article}%");
+        }
+        if ($date_debut) {
+            $qb->whereDate('note_perceptions.date_ordonnancement', '>=', $date_debut);
+        }
+        if ($date_fin) {
+            $qb->whereDate('note_perceptions.date_ordonnancement', '<=', $date_fin);
         }
 
-        // Ajouter un extrait du texte OCR
-        if ($query && $doc->montext) {
-            $pos = stripos($doc->montext, $query);
-            if ($pos !== false) {
-                $start = max(0, $pos - 60);
-                $length = min(strlen($doc->montext) - $start, 120);
-                $doc->extrait = '...' . substr($doc->montext, $start, $length) . '...';
-            }
-        }
-
-        // Statistiques du texte
-        $doc->stats_texte = [
-            'longueur' => strlen($doc->montext ?? ''),
-            'mots' => str_word_count($doc->montext ?? ''),
-            'pages_approx' => ceil(strlen($doc->montext ?? '') / 3000)
-        ];
-
-        return $doc;
-    });
-
-    // Agrégation des statistiques par note
-    $notesAggregated = [];
-    foreach ($documents as $doc) {
-        $noteId = $doc->note_id;
-        if (!isset($notesAggregated[$noteId])) {
-            $notesAggregated[$noteId] = $doc;
-            $notesAggregated[$noteId]->total_documents = 1;
-            $notesAggregated[$noteId]->documents_avec_ocr = !empty($doc->montext) ? 1 : 0;
+        if ($sort_by === 'date_ordonnancement') {
+            $qb->orderBy('note_perceptions.date_ordonnancement', $sort_order);
+        } elseif ($sort_by === 'numero_serie') {
+            $qb->orderBy('note_perceptions.numero_serie', $sort_order);
         } else {
-            $notesAggregated[$noteId]->total_documents++;
-            if (!empty($doc->montext)) {
-                $notesAggregated[$noteId]->documents_avec_ocr++;
-            }
+            $qb->orderBy('note_perceptions.date_ordonnancement', $sort_order);
         }
+
+        $notes = $qb->paginate($per_page, ['*'], 'page', $page);
+
+        $notes->getCollection()->transform(function ($note) use ($query) {
+            $allDocs = $note->documents()->get();
+
+            $bestDoc = null;
+            if ($query && $allDocs->count() > 0) {
+                $escaped = addcslashes($query, '%_\\');
+                $bestDoc = $allDocs->first(function ($doc) use ($escaped) {
+                    return stripos($doc->montext ?? '', $escaped) !== false
+                        || stripos($doc->nom_native ?? '', $escaped) !== false;
+                });
+            }
+            if (!$bestDoc) {
+                $bestDoc = $allDocs->first();
+            }
+
+            $note->doc_id = $bestDoc ? $bestDoc->id : null;
+            $note->nom_fichier = $bestDoc ? $bestDoc->nom_fichier : null;
+            $note->nom_native = $bestDoc ? $bestDoc->nom_native : null;
+            $note->montext = $bestDoc ? $bestDoc->montext : null;
+            $note->taille = $bestDoc ? $bestDoc->taille : null;
+            $note->assujetti_nom = $note->assujetti ? $note->assujetti->nom_raison_sociale : '—';
+            $note->classeur_nom = $note->classeur ? $note->classeur->nom_classeur : '—';
+
+            // Ajouter un extrait du texte OCR
+            $montext = $bestDoc ? $bestDoc->montext : null;
+            if ($query && $montext) {
+                $pos = stripos($montext, $query);
+                if ($pos !== false) {
+                    $start = max(0, $pos - 60);
+                    $length = min(strlen($montext) - $start, 120);
+                    $note->extrait = '...' . substr($montext, $start, $length) . '...';
+                } else {
+                    $note->extrait = substr($montext, 0, 150) . '...';
+                }
+            } else {
+                $note->extrait = null;
+            }
+
+            $note->note_info = [
+                'id' => $note->id,
+                'numero_serie' => $note->numero_serie,
+                'numero_article' => $note->numero_article,
+                'date_ordonnancement' => $note->date_ordonnancement,
+                'id_assujetti' => $note->id_assujetti,
+                'id_classeur' => $note->id_classeur,
+                'id_centre' => $note->id_centre_ordonnancement,
+            ];
+            return $note;
+        });
+
+        $response = [
+            'success' => true,
+            'data' => $notes->items(),
+            'pagination' => [
+                'current_page' => $notes->currentPage(),
+                'last_page' => $notes->lastPage(),
+                'per_page' => $notes->perPage(),
+                'total' => $notes->total(),
+            ]
+        ];
+
+        return response(json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE), 200, [
+            'Content-Type' => 'application/json',
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Erreur recherche notes: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la recherche: ' . $e->getMessage()
+        ], 500);
     }
-
-    Log::info('Nombre de résultats: ' . $documents->total());
-
-    return response()->json([
-        'success' => true,
-        'data' => array_values($notesAggregated),
-        'pagination' => [
-            'current_page' => $documents->currentPage(),
-            'last_page' => $documents->lastPage(),
-            'per_page' => $documents->perPage(),
-            'total' => count($notesAggregated)
-        ],
-        'filters_applied' => [
-            'query' => $query,
-            'id_classeur' => $id_classeur,
-            'id_assujetti' => $id_assujetti,
-            'numero_article' => $numero_article,
-            'date_debut' => $date_debut,
-            'date_fin' => $date_fin,
-            'sort_by' => $sort_by,
-            'sort_order' => $sort_order
-        ],
-        'stats' => [
-            'total_documents' => $documents->total()
-        ]
-    ]);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

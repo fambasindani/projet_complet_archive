@@ -53,6 +53,6 @@ class NotePerception extends Model
 
 public function documents()
 {
-    return $this->hasMany(DocumentDeclaration::class, 'id_declaration', 'id');
+    return $this->hasMany(DocumentNotePerception::class, 'id_note_perception', 'id');
 }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentDeclaration;
+use App\Services\OcrService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -107,7 +108,6 @@ public function uploadMultiplex(Request $request)
         return response()->json(['error' => 'Classeur non défini'], 400);
     }
 
-    // Validation nom fichier
     $nomFichier = basename($document->nom_fichier);
     if (!preg_match('/^[a-zA-Z0-9_\-]+\.pdf$/i', $nomFichier)) {
         return response()->json(['error' => 'Nom de fichier invalide'], 400);
@@ -120,9 +120,12 @@ public function uploadMultiplex(Request $request)
         return response()->json(['error' => 'Fichier introuvable'], 404);
     }
 
-    return response()->file($chemin, [
+    $content = file_get_contents($chemin);
+
+    return response($content, 200, [
         'Content-Type' => 'application/pdf',
-        'Content-Disposition' => 'inline; filename="' . addslashes($document->nom_native) . '"'
+        'Content-Disposition' => 'inline; filename="' . addslashes($document->nom_native) . '"',
+        'Access-Control-Allow-Origin' => '*',
     ]);
 }
 
@@ -135,42 +138,113 @@ public function uploadMultiplex(Request $request)
     {
         $request->validate([
             'files'           => 'required|array|max:10',
-            'files.*'         => 'file|mimes:pdf|max:51200', // max 50 Mo
+            'files.*'         => 'file|mimes:pdf|max:51200',
             'id_declaration'  => 'required|integer|exists:declarations,id',
             'id_classeur'     => 'required|integer|exists:classeurs,id',
         ]);
 
         $documents = [];
+        $ocrService = new OcrService();
+        $errors = [];
 
         foreach ($request->file('files') as $file) {
-            // Générer un nom unique
             $nomFichier = Str::uuid() . '.' . $file->getClientOriginalExtension();
             $dossier = "document_declaration/" . ($request->id_classeur + 100);
 
-            // 📁 Stockage du fichier
             $path = $file->storeAs($dossier, $nomFichier);
-
-            // 📏 Taille du fichier
             $taille = $file->getSize();
+            $filePath = storage_path("app/{$dossier}/{$nomFichier}");
 
-            // 💾 Enregistrement DB (sans montext pour l'instant)
+            $ocrResult = $ocrService->extractText($filePath);
+
+            if (!$ocrResult['success']) {
+                $ocrResult = $ocrService->extractText($filePath);
+            }
+
+            if (!$ocrResult['success']) {
+                if (file_exists($filePath)) unlink($filePath);
+                $errors[] = $file->getClientOriginalName() . ': OCR échoué - ' . ($ocrResult['message'] ?? 'inconnu');
+                continue;
+            }
+
             $document = DocumentDeclaration::create([
                 'id_declaration' => $request->id_declaration,
                 'id_classeur'    => $request->id_classeur,
                 'nom_fichier'    => $nomFichier,
                 'nom_native'     => $file->getClientOriginalName(),
                 'taille'         => $taille,
-                'montext'        => null // Sera rempli plus tard par le frontend
+                'montext'        => strip_tags($ocrResult['text']),
             ]);
+
+            $document->ocr_method = $ocrResult['method'] ?? null;
+            $document->ocr_status = 'completed';
+            $document->save();
 
             $documents[] = $document;
         }
 
+        if (empty($documents) && !empty($errors)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun fichier traité - OCR a échoué pour tous',
+                'errors' => $errors,
+            ], 422);
+        }
+
         return response()->json([
             'success'   => true,
-            'message'   => count($documents) . ' fichier(s) uploadé(s) avec succès ✅',
-            'documents' => $documents
+            'message'   => count($documents) . ' fichier(s) uploadé(s) avec OCR',
+            'documents' => $documents,
+            'errors'    => !empty($errors) ? $errors : null,
         ], 201);
+    }
+
+    public function ocrDocument($id)
+    {
+        $document = DocumentDeclaration::find($id);
+        if (!$document) {
+            return response()->json(['success' => false, 'message' => 'Document non trouvé'], 404);
+        }
+
+        $dossier = "document_declaration/" . ($document->id_classeur + 100);
+        $filePath = storage_path("app/{$dossier}/{$document->nom_fichier}");
+
+        if (!file_exists($filePath)) {
+            return response()->json(['success' => false, 'message' => 'Fichier physique introuvable'], 404);
+        }
+
+        $ocrService = new OcrService();
+        $result = $ocrService->extractText($filePath);
+
+        if ($result['success']) {
+            $document->montext = strip_tags($result['text']);
+            $document->save();
+            return response()->json([
+                'success' => true,
+                'message' => 'OCR terminé avec succès',
+                'data' => [
+                    'text_length' => strlen($document->montext),
+                    'method' => $result['method'],
+                    'pages' => $result['pages'],
+                    'processing_time' => $result['processing_time'],
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $result['message']
+        ], 500);
+    }
+
+    public function ocrHealth()
+    {
+        $ocrService = new OcrService();
+        $healthy = $ocrService->checkHealth();
+        return response()->json([
+            'status' => $healthy ? 'ok' : 'unavailable',
+            'service' => 'ocr',
+        ], $healthy ? 200 : 503);
     }
 
     /**
@@ -239,16 +313,29 @@ public function advancedSearch(Request $request, $id_direction)
     // Construire la requête sur DocumentDeclaration
     $queryBuilder = DocumentDeclaration::query();
 
-    // 🔒 FILTRE OBLIGATOIRE PAR DIRECTION DE L'UTILISATEUR
-    $queryBuilder->whereHas('declaration', function ($q) use ($id_direction) {
-        $q->where('id_direction', $id_direction);
+    // 🔒 FILTRE PAR DIRECTIONS (utilisateur + supplémentaires combinés en OR)
+    // La direction de l'utilisateur est TOUJOURS incluse
+    $allDirectionIds = [(int)$id_direction];
+    if ($directionIds) {
+        if (is_string($directionIds)) {
+            $directionIds = explode(',', $directionIds);
+        }
+        $directionIds = array_map('intval', $directionIds);
+        $directionIds = array_filter($directionIds, fn($id) => $id > 0);
+        $allDirectionIds = array_merge($allDirectionIds, $directionIds);
+    }
+    $allDirectionIds = array_unique($allDirectionIds);
+
+    \Log::info('Filtrage par directions (OR): ' . implode(', ', $allDirectionIds));
+
+    $queryBuilder->whereHas('declaration', function ($q) use ($allDirectionIds) {
+        $q->whereIn('id_direction', $allDirectionIds);
     });
 
     // 🔍 RECHERCHE DANS TEXTE OCR (montext) - échappée + FULLTEXT si dispo
     if ($query) {
         $escaped = addcslashes($query, '%_\\');
         $queryBuilder->where(function ($q) use ($escaped, $query) {
-            // Si FULLTEXT disponible, on pourrait utiliser MATCH; fallback LIKE sécurisé
             $q->where('montext', 'LIKE', "%{$escaped}%")
               ->orWhere('nom_native', 'LIKE', "%{$escaped}%")
               ->orWhere('nom_fichier', 'LIKE', "%{$escaped}%");
@@ -271,25 +358,6 @@ public function advancedSearch(Request $request, $id_direction)
 
     if ($date_fin) {
         $queryBuilder->whereDate('created_at', '<=', $date_fin);
-    }
-
-    // 🏢 FILTRE SUPPLEMENTAIRE PAR DIRECTIONS (optionnel, en plus de celui de l'utilisateur)
-    if ($directionIds) {
-        // Convertir les IDs en tableau d'entiers
-        if (is_string($directionIds)) {
-            $directionIds = explode(',', $directionIds);
-        }
-        $directionIds = array_map('intval', $directionIds);
-        $directionIds = array_filter($directionIds, fn($id) => $id > 0);
-
-        if (!empty($directionIds)) {
-            \Log::info('Filtrage supplémentaire par directions: ' . implode(', ', $directionIds));
-            
-            // Ce filtre s'ajoute au filtre obligatoire de l'utilisateur
-            $queryBuilder->whereHas('declaration.departement', function ($q) use ($directionIds) {
-                $q->whereIn('id', $directionIds);
-            });
-        }
     }
 
     // 📊 TRI
@@ -352,7 +420,7 @@ public function advancedSearch(Request $request, $id_direction)
 
     \Log::info('Nombre de résultats: ' . $documents->total());
 
-    return response()->json([
+    $response = [
         'success' => true,
         'data' => $documents->items(),
         'pagination' => [
@@ -376,6 +444,10 @@ public function advancedSearch(Request $request, $id_direction)
             'total_documents' => $documents->total(),
             'direction_filtree' => $id_direction
         ]
+    ];
+
+    return response(json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE), 200, [
+        'Content-Type' => 'application/json',
     ]);
 }
 

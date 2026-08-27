@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\DocumentNotePerception;
+use App\Services\OcrService;
 
 class DocumentNotePerceptionController extends Controller
 {
@@ -29,27 +30,54 @@ class DocumentNotePerceptionController extends Controller
         ]);
 
         $documents = [];
+        $ocrService = new OcrService();
+        $errors = [];
 
         foreach ($request->file('files') as $file) {
             $nomFichier = Str::uuid() . '.' . $file->getClientOriginalExtension();
             $dossier = "document_noteperception/" . ($request->id_classeur + 100) . "/" . ($request->id_ministere + 100);
 
-            // Stockage dans le dossier spécifique
             $file->storeAs($dossier, $nomFichier);
 
-            $documents[] = DocumentNotePerception::create([
+            $filePath = storage_path("app/{$dossier}/{$nomFichier}");
+            $ocrResult = $ocrService->extractText($filePath);
+
+            if (!$ocrResult['success']) {
+                $ocrResult = $ocrService->extractText($filePath);
+            }
+
+            if (!$ocrResult['success']) {
+                if (file_exists($filePath)) unlink($filePath);
+                $errors[] = $file->getClientOriginalName() . ': OCR échoué - ' . ($ocrResult['message'] ?? 'inconnu');
+                continue;
+            }
+
+            $document = DocumentNotePerception::create([
                 'id_note_perception' => $request->id_note_perception,
                 'id_classeur' => $request->id_classeur,
                 'id_ministere' => $request->id_ministere,
                 'nom_fichier' => $nomFichier,
                 'nom_native' => $file->getClientOriginalName(),
                 'taille' => $file->getSize(),
+                'montext' => strip_tags($ocrResult['text']),
             ]);
+
+            $documents[] = $document;
+        }
+
+        if (empty($documents) && !empty($errors)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun fichier traité - OCR a échoué pour tous',
+                'errors' => $errors,
+            ], 422);
         }
 
         return response()->json([
-            'message' => 'Fichiers PDF uploadés avec succès ✅',
-            'documents' => $documents
+            'success' => true,
+            'message' => count($documents) . ' fichier(s) uploadé(s) avec OCR',
+            'documents' => $documents,
+            'errors' => !empty($errors) ? $errors : null,
         ], 201);
     }
 
@@ -62,19 +90,22 @@ class DocumentNotePerceptionController extends Controller
         $idMinistere = $document->id_ministere ?? null;
 
         if (!$idClasseur || !$idMinistere) {
-            return response()->json(['error' => 'Classeur ou ministère non défini ❌'], 400);
+            return response()->json(['error' => 'Classeur ou ministère non défini'], 400);
         }
 
         $dossier = "document_noteperception/" . ($idClasseur + 100) . "/" . ($idMinistere + 100);
         $chemin = storage_path("app/{$dossier}/{$document->nom_fichier}");
 
         if (!file_exists($chemin)) {
-            return response()->json(['error' => 'Fichier introuvable 📁'], 404);
+            return response()->json(['error' => 'Fichier introuvable'], 404);
         }
 
-        return response()->file($chemin, [
+        $content = file_get_contents($chemin);
+
+        return response($content, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $document->nom_native . '"'
+            'Content-Disposition' => 'inline; filename="' . addslashes($document->nom_native) . '"',
+            'Access-Control-Allow-Origin' => '*',
         ]);
     }
 

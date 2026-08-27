@@ -155,6 +155,52 @@ class ScannerService {
         return { success: false, scanning: false };
     }
 
+    // Scanner et uploader
+    async scanAndUpload(config) {
+        console.log("🔄 scanAndUpload démarré:", config);
+        const { apiUrl, token, idDeclaration, idClasseur, nom_fichier } = config;
+
+        const infoResult = await this.setDocumentInfo(idDeclaration, idClasseur, token, nom_fichier);
+        console.log("📋 setDocumentInfo:", infoResult);
+
+        if (apiUrl) {
+            await this.setApiUrl(apiUrl);
+            console.log("🔗 setApiUrl:", apiUrl);
+        }
+
+        const scanResult = await this.startScan();
+        console.log("🚀 startScan:", scanResult);
+        if (scanResult.success === false && scanResult.message) {
+            return { success: false, message: scanResult.message };
+        }
+
+        let scanningDetected = false;
+        const maxAttempts = 120;
+        for (let i = 0; i < maxAttempts; i++) {
+            await new Promise(r => setTimeout(r, 1000));
+            const status = await this.getScanStatus();
+            console.log(`📊 Statut [${i+1}/${maxAttempts}]:`, status);
+
+            if (scanningDetected) {
+                if (status.scanning === false || status.done) {
+                    if (status.success !== false) {
+                        return { success: true, files: status.files || [], message: "Scan terminé" };
+                    }
+                    return { success: false, message: status.message || "Scan échoué" };
+                }
+            } else {
+                if (status.scanning === true) {
+                    scanningDetected = true;
+                }
+                if (i > 5 && !scanningDetected) {
+                    return { success: true, files: [], message: "Scan envoyé au scanner" };
+                }
+            }
+        }
+
+        return { success: true, files: [], message: "Scan en cours côté scanner" };
+    }
+
     // Tester la connexion avec instructions
     async testConnectionWithInstructions() {
         console.log("🧪 Test de connexion au scanner...");
