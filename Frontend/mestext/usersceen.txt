@@ -1,0 +1,748 @@
+import React, { useState, useEffect } from 'react';
+import { useUser } from '../Composant/UserContext';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import Swal from 'sweetalert2';
+import { 
+  FaEdit, 
+  FaTrash, 
+  FaPlus, 
+  FaSearch,
+  FaFilter,
+  FaUser,
+  FaUserCheck,
+  FaUserTimes,
+  FaUserLock,
+  FaChevronLeft,
+  FaChevronRight,
+  FaArrowLeft,
+  FaTimes
+} from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+
+const Users = () => {
+  const { users, roles, addUser, updateUser, deleteUser } = useUser();
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const itemsPerPage = 10;
+
+  const [formData, setFormData] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    password: '',
+    statut: 'active',
+    role_ids: []
+  });
+
+  // Effet pour gérer le scroll et l'ESC
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showModal) {
+        setShowModal(false);
+      }
+    };
+
+    if (showModal) {
+      document.body.classList.add('modal-open');
+      document.addEventListener('keydown', handleEscape);
+    } else {
+      document.body.classList.remove('modal-open');
+      document.removeEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showModal]);
+
+  // Filtrage et pagination
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = search === '' || 
+      user.nom.toLowerCase().includes(search.toLowerCase()) ||
+      user.prenom.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || user.statut === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (editingUser) {
+      updateUser(editingUser.id, formData);
+      Swal.fire('Succès', 'Utilisateur mis à jour avec succès', 'success');
+    } else {
+      addUser(formData);
+      Swal.fire('Succès', 'Utilisateur créé avec succès', 'success');
+    }
+    
+    setShowModal(false);
+    resetForm();
+  };
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: 'Êtes-vous sûr ?',
+      text: "Cette action est irréversible !",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteUser(id);
+        Swal.fire('Supprimé !', 'L\'utilisateur a été supprimé.', 'success');
+      }
+    });
+  };
+
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setFormData({
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      password: '',
+      statut: user.statut,
+      role_ids: user.role_ids || []
+    });
+    setShowModal(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      nom: '',
+      prenom: '',
+      email: '',
+      password: '',
+      statut: 'active',
+      role_ids: []
+    });
+    setEditingUser(null);
+  };
+
+  const getStatusIcon = (statut) => {
+    switch(statut) {
+      case 'active': return <FaUserCheck className="text-success" />;
+      case 'inactive': return <FaUserTimes className="text-warning" />;
+      case 'bloqué': return <FaUserLock className="text-danger" />;
+      default: return <FaUser className="text-muted" />;
+    }
+  };
+
+  const getStatusText = (statut) => {
+    switch(statut) {
+      case 'active': return 'Actif';
+      case 'inactive': return 'Inactif';
+      case 'bloqué': return 'Bloqué';
+      default: return statut;
+    }
+  };
+
+  const getRoleBadges = (roleIds) => {
+    return roleIds?.map(roleId => {
+      const role = roles.find(r => r.id === roleId);
+      return role ? (
+        <span key={roleId} className="badge badge-info mr-1 mb-1">
+          {role.nom}
+        </span>
+      ) : null;
+    }).filter(Boolean) || [];
+  };
+
+  return (
+    <div className="users-container">
+      {/* Header */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h2 className="h3 mb-0">
+                <FaUser className="mr-2 text-primary" />
+                Gestion des Utilisateurs
+              </h2>
+              <p className="text-muted mb-0">
+                Gérez les utilisateurs et leurs rôles
+              </p>
+            </div>
+            
+            <div className="d-flex">
+              <Link 
+                to="/gestion-utilisateurs/dashboard"
+                className="btn btn-outline-secondary mr-2"
+              >
+                <FaArrowLeft className="mr-1" />
+                Retour
+              </Link>
+              
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  resetForm();
+                  setShowModal(true);
+                }}
+              >
+                <FaPlus className="mr-1" />
+                Nouvel Utilisateur
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtres et recherche */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <div className="row align-items-center">
+            <div className="col-md-6 mb-3 mb-md-0">
+              <div className="input-group">
+                <div className="input-group-prepend">
+                  <span className="input-group-text bg-white border-right-0">
+                    <FaSearch className="text-muted" />
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  className="form-control border-left-0"
+                  placeholder="Rechercher par nom, prénom ou email..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="col-md-4 mb-3 mb-md-0">
+              <div className="input-group">
+                <div className="input-group-prepend">
+                  <span className="input-group-text bg-white">
+                    <FaFilter className="text-muted" />
+                  </span>
+                </div>
+                <select 
+                  className="form-control"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="active">Actifs</option>
+                  <option value="inactive">Inactifs</option>
+                  <option value="bloqué">Bloqués</option>
+                </select>
+              </div>
+            </div>
+            <div className="col-md-2 text-right">
+              <span className="badge badge-light p-2">
+                {users.length} utilisateur(s)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Statistiques rapides */}
+      <div className="row mb-4">
+        <div className="col-md-3 col-6 mb-3">
+          <div className="card border-0 bg-light shadow-sm h-100">
+            <div className="card-body text-center">
+              <div className="mb-2">
+                <FaUser className="text-primary" size={24} />
+              </div>
+              <h3 className="mb-0">{users.length}</h3>
+              <p className="text-muted mb-0">Total</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
+          <div className="card border-0 bg-success-light shadow-sm h-100">
+            <div className="card-body text-center">
+              <div className="mb-2">
+                <FaUserCheck className="text-success" size={24} />
+              </div>
+              <h3 className="mb-0">
+                {users.filter(u => u.statut === 'active').length}
+              </h3>
+              <p className="text-muted mb-0">Actifs</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
+          <div className="card border-0 bg-warning-light shadow-sm h-100">
+            <div className="card-body text-center">
+              <div className="mb-2">
+                <FaUserTimes className="text-warning" size={24} />
+              </div>
+              <h3 className="mb-0">
+                {users.filter(u => u.statut === 'inactive').length}
+              </h3>
+              <p className="text-muted mb-0">Inactifs</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
+          <div className="card border-0 bg-danger-light shadow-sm h-100">
+            <div className="card-body text-center">
+              <div className="mb-2">
+                <FaUserLock className="text-danger" size={24} />
+              </div>
+              <h3 className="mb-0">
+                {users.filter(u => u.statut === 'bloqué').length}
+              </h3>
+              <p className="text-muted mb-0">Bloqués</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tableau des utilisateurs */}
+      <div className="card shadow-sm border-0">
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-hover mb-0">
+              <thead className="thead-light">
+                <tr>
+                  <th style={{ width: '50px' }}>#</th>
+                  <th>Utilisateur</th>
+                  <th>Email</th>
+                  <th>Rôles</th>
+                  <th>Statut</th>
+                  <th>Date d'inscription</th>
+                  <th style={{ width: '120px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5">
+                      <div className="py-4">
+                        <FaUser className="text-muted mb-3" size={48} />
+                        <h4 className="text-muted mb-2">Aucun utilisateur trouvé</h4>
+                        <p className="text-muted">
+                          {search ? 'Essayez avec d\'autres termes de recherche' : 'Commencez par créer votre premier utilisateur'}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedUsers.map((user, index) => (
+                    <tr key={user.id} className="hover-lift">
+                      <td className="text-muted">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="avatar-circle mr-3">
+                            {user.prenom?.[0]}{user.nom?.[0]}
+                          </div>
+                          <div>
+                            <div className="font-weight-bold">{user.prenom} {user.nom}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-truncate" style={{ maxWidth: '200px' }}>
+                          {user.email}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex flex-wrap gap-1">
+                          {getRoleBadges(user.role_ids)}
+                          {(!user.role_ids || user.role_ids.length === 0) && (
+                            <span className="text-muted small">Aucun rôle</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge badge-${user.statut === 'active' ? 'success' : 
+                                          user.statut === 'inactive' ? 'warning' : 'danger'}`}>
+                          {getStatusText(user.statut)}
+                        </span>
+                      </td>
+                      <td className="text-muted">
+                        {format(new Date(user.datecreation), 'dd/MM/yyyy', { locale: fr })}
+                      </td>
+                      <td>
+                        <div className="btn-group btn-group-sm">
+                          <button 
+                            className="btn btn-outline-primary"
+                            onClick={() => handleEdit(user)}
+                            title="Modifier"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button 
+                            className="btn btn-outline-danger"
+                            onClick={() => handleDelete(user.id)}
+                            title="Supprimer"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="card-footer border-top">
+            <div className="row align-items-center">
+              <div className="col-md-6">
+                <div className="text-muted">
+                  Affichage de {(currentPage - 1) * itemsPerPage + 1} à{' '}
+                  {Math.min(currentPage * itemsPerPage, filteredUsers.length)} sur{' '}
+                  {filteredUsers.length} utilisateurs
+                </div>
+              </div>
+              <div className="col-md-6">
+                <nav className="d-flex justify-content-end">
+                  <ul className="pagination mb-0">
+                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                      <button 
+                        className="page-link"
+                        onClick={() => setCurrentPage(prev => prev - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        <FaChevronLeft />
+                      </button>
+                    </li>
+                    
+                    {[...Array(totalPages)].map((_, i) => (
+                      <li key={i + 1} className={`page-item ${i + 1 === currentPage ? 'active' : ''}`}>
+                        <button 
+                          className="page-link"
+                          onClick={() => setCurrentPage(i + 1)}
+                        >
+                          {i + 1}
+                        </button>
+                      </li>
+                    ))}
+                    
+                    <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                      <button 
+                        className="page-link"
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                        disabled={currentPage === totalPages}
+                      >
+                        <FaChevronRight />
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal pour ajouter/modifier un utilisateur - VERSION CORRIGÉE */}
+      {showModal && (
+        <>
+          <div className="modal-backdrop show"></div>
+          <div 
+            className="modal show user-modal modal-form fade" 
+            tabIndex="-1" 
+            role="dialog"
+            style={{ display: 'block' }}
+            onClick={(e) => {
+              if (e.target.classList.contains('modal')) {
+                setShowModal(false);
+              }
+            }}
+          >
+            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    {editingUser ? 'Modifier l\'utilisateur' : 'Nouvel Utilisateur'}
+                  </h5>
+                  <button 
+                    type="button" 
+                    className="close" 
+                    onClick={() => setShowModal(false)}
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+                <form onSubmit={handleSubmit}>
+                  <div className="modal-body">
+                    <div className="row">
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="font-weight-bold">
+                            Nom <span className="text-danger">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={formData.nom}
+                            onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                            required
+                            placeholder="Entrez le nom"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="font-weight-bold">
+                            Prénom <span className="text-danger">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={formData.prenom}
+                            onChange={(e) => setFormData({...formData, prenom: e.target.value})}
+                            required
+                            placeholder="Entrez le prénom"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="font-weight-bold">
+                        Email <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        className="form-control"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        required
+                        placeholder="exemple@email.com"
+                        disabled={!!editingUser}
+                      />
+                      {editingUser && (
+                        <small className="form-text text-muted">
+                          L'email ne peut pas être modifié
+                        </small>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label className="font-weight-bold">
+                        Mot de passe {editingUser && <span className="text-muted">(laisser vide pour ne pas changer)</span>}
+                      </label>
+                      <input
+                        type="password"
+                        className="form-control"
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        required={!editingUser}
+                        placeholder="Entrez le mot de passe"
+                      />
+                    </div>
+
+                    <div className="row">
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="font-weight-bold">Statut</label>
+                          <select
+                            className="form-control"
+                            value={formData.statut}
+                            onChange={(e) => setFormData({...formData, statut: e.target.value})}
+                          >
+                            <option value="active">Actif</option>
+                            <option value="inactive">Inactif</option>
+                            <option value="bloqué">Bloqué</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="font-weight-bold">Ajouter un rôle</label>
+                          <select
+                            className="form-control"
+                            value=""
+                            onChange={(e) => {
+                              if (e.target.value && !formData.role_ids.includes(e.target.value)) {
+                                setFormData({
+                                  ...formData,
+                                  role_ids: [...formData.role_ids, e.target.value]
+                                });
+                              }
+                            }}
+                          >
+                            <option value="">Sélectionner un rôle...</option>
+                            {roles.map(role => (
+                              <option key={role.id} value={role.id}>
+                                {role.nom}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {formData.role_ids.length > 0 && (
+                      <div className="form-group">
+                        <label className="font-weight-bold">Rôles attribués</label>
+                        <div className="selected-roles p-3 border rounded">
+                          <div className="row">
+                            {formData.role_ids.map(roleId => {
+                              const role = roles.find(r => r.id === roleId);
+                              return role ? (
+                                <div key={roleId} className="col-md-6 mb-2">
+                                  <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+                                    <div>
+                                      <span className="font-weight-bold">{role.nom}</span>
+                                      {role.description && (
+                                        <small className="d-block text-muted">
+                                          {role.description}
+                                        </small>
+                                      )}
+                                    </div>
+                                    <button 
+                                      type="button"
+                                      className="btn btn-sm btn-link text-danger"
+                                      onClick={() => {
+                                        setFormData({
+                                          ...formData,
+                                          role_ids: formData.role_ids.filter(id => id !== roleId)
+                                        });
+                                      }}
+                                    >
+                                      <FaTimes />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="modal-footer">
+                    <button 
+                      type="button" 
+                      className="btn btn-outline-secondary" 
+                      onClick={() => setShowModal(false)}
+                    >
+                      Annuler
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      {editingUser ? 'Mettre à jour' : 'Créer l\'utilisateur'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <style jsx>{`
+        .users-container {
+          padding: 20px;
+          background: #f8f9fa;
+          min-height: calc(100vh - 76px);
+        }
+        
+        .hover-lift {
+          transition: all 0.2s;
+        }
+        
+        .hover-lift:hover {
+          background-color: #f8f9fa;
+          transform: translateY(-1px);
+        }
+        
+        .page-item.active .page-link {
+          background: linear-gradient(45deg, #007bff, #6610f2);
+          border-color: #007bff;
+        }
+        
+        /* Stats cards backgrounds */
+        .bg-success-light {
+          background-color: rgba(40, 167, 69, 0.1) !important;
+        }
+        
+        .bg-warning-light {
+          background-color: rgba(255, 193, 7, 0.1) !important;
+        }
+        
+        .bg-danger-light {
+          background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+        
+        .avatar-circle {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: linear-gradient(45deg, #007bff, #6610f2);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 14px;
+          flex-shrink: 0;
+        }
+        
+        .selected-roles {
+          max-height: 200px;
+          overflow-y: auto;
+        }
+        
+        /* Scrollbar pour les rôles sélectionnés */
+        .selected-roles::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .selected-roles::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        
+        .selected-roles::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+        }
+        
+        .selected-roles::-webkit-scrollbar-thumb:hover {
+          background: #a1a1a1;
+        }
+        
+        @media (max-width: 768px) {
+          .users-container {
+            padding: 15px;
+          }
+          
+          .table-responsive {
+            font-size: 14px;
+          }
+          
+          .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Users;

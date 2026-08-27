@@ -1,0 +1,566 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CentreOrdonnancementController;
+use App\Http\Controllers\ClasseurController;
+use App\Http\Controllers\EmplacementController;
+use App\Http\Controllers\DirectionController;
+use App\Http\Controllers\AssujettiController;
+use App\Http\Controllers\NotePerceptionController;
+use App\Http\Controllers\DocumentNotePerceptionController;
+use App\Http\Controllers\DeclarationController;
+use App\Http\Controllers\DocumentDeclarationController;
+use App\Http\Controllers\UtilisateurController;
+use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\ArticleBudgetaireController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\MonUserController;
+use App\Http\Controllers\MonUtilisateurController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\DepartementController;
+
+use App\Http\Controllers\DashboardNoteController;
+use App\Http\Controllers\ScanController;
+use App\Http\Controllers\PublicStatsController;
+
+
+//172.25.20.110
+//php artisan serve --host=172.25.20.110 --port=8000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ============================================
+// 3. STATISTIQUES PUBLIQUES POUR HOMESCREEN
+// ============================================
+
+
+Route::prefix('public')->group(function () {
+    // Statistiques globales (pour les 4 cartes)
+    Route::get('/stats', [PublicStatsController::class, 'getHomeStats']);
+    
+    // Détails module Archivage Ordinaire (AD)
+    Route::get('/module/ad/stats', [PublicStatsController::class, 'getAdStats']);
+    
+    // Détails module Notes de Perception (NP)
+    Route::get('/module/np/stats', [PublicStatsController::class, 'getNpStats']);
+    
+    // Informations sur les modules (pour ModuleCard)
+    Route::get('/modules', [PublicStatsController::class, 'getModulesInfo']);
+    
+    // Activités récentes (limité)
+    Route::get('/recent-activity', [PublicStatsController::class, 'getRecentActivity']);
+    
+    // Santé du système
+    Route::get('/health', [PublicStatsController::class, 'getSystemHealth']);
+});
+
+
+
+// ============================================
+// 4. TEST (PUBLIQUE)
+// ============================================
+Route::get('/ping', function () {
+    return response()->json([
+        'message' => 'pong',
+        'timestamp' => now(),
+        'status' => 'API is running'
+    ]);
+});
+
+
+
+
+
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('dashboards/notes')->group(function () {
+    // Statistiques
+    Route::get('/statistics', [DashboardNoteController::class, 'statistics']);
+    // Listes pour filtres
+    Route::get('/articles', [DashboardNoteController::class, 'getArticles']);
+    Route::get('/assujettis', [DashboardNoteController::class, 'getAssujettis']);
+    Route::get('/classeurs', [DashboardNoteController::class, 'getClasseurs']);
+    // Centres
+    Route::get('/centres', [DashboardNoteController::class, 'centres']);
+    Route::get('/centres/{id}/notes', [DashboardNoteController::class, 'notesByCentre']);
+    Route::get('/centres/{id}/stats', [DashboardNoteController::class, 'centreStats']);
+    // Articles
+    Route::get('/articles/{id}/stats', [DashboardNoteController::class, 'articleStats']);
+    // Recherche et activités
+    Route::get('/recent', [DashboardNoteController::class, 'recentActivities']);
+    Route::post('/search', [DashboardNoteController::class, 'advancedSearch']);
+});
+});
+
+
+
+
+
+// Routes pour le scanner (sans base de données)
+Route::middleware(['auth:sanctum'])->group(function () {
+Route::prefix('scans')->group(function () {
+    // Upload simple
+    Route::post('/upload', [ScanController::class, 'upload']);
+    
+    // Upload multiple
+    Route::post('/upload-multiple', [ScanController::class, 'uploadMultiple']);
+    
+    // Lister tous les scans
+    Route::get('/list', [ScanController::class, 'listScans']);
+    
+    // Rechercher des scans
+    Route::get('/search', [ScanController::class, 'search']);
+    
+    // Télécharger
+    Route::get('/download/{filename}', [ScanController::class, 'download']);
+    
+    // Supprimer
+    Route::delete('/delete/{filename}', [ScanController::class, 'delete']);
+    
+    // Nettoyer les anciens fichiers
+    Route::post('/cleanup', [ScanController::class, 'cleanup']);
+    
+    // Santé de l'API
+    Route::get('/health', [ScanController::class, 'health']);
+});
+
+// Routes compatibles avec votre code C#
+Route::post('/upload-scan', [ScanController::class, 'upload']);
+Route::get('/scans', [ScanController::class, 'listScans']);
+});
+
+
+
+
+
+
+Route::post('/connexion', [MonUtilisateurController::class, 'login']);
+    // ============ MON UTILISATEURS ============
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('mon-utilisateurs')->group(function () {
+        // CRUD de base
+        Route::get('/', [MonUtilisateurController::class, 'index']);
+        Route::post('/', [MonUtilisateurController::class, 'store']);
+        Route::get('/{id}', [MonUtilisateurController::class, 'show']);
+        Route::put('/{id}', [MonUtilisateurController::class, 'update']);
+        Route::delete('/{id}', [MonUtilisateurController::class, 'destroy']);
+        
+        // Statistiques
+        Route::get('/stats/general', [MonUtilisateurController::class, 'stats']);
+        Route::get('/stats/recent', [MonUtilisateurController::class, 'recentUsers']);
+        Route::get('/{id}/with-details', [MonUtilisateurController::class, 'getWithDetails']);
+        
+        // Gestion des rôles
+        Route::post('/{id}/assign-roles', [MonUtilisateurController::class, 'assignRoles']);
+        Route::post('/{id}/remove-role/{roleId}', [MonUtilisateurController::class, 'removeRole']);
+        
+        // Gestion des départements
+        Route::post('/{id}/assign-directions', [MonUtilisateurController::class, 'assignDirections']);
+        Route::post('/{id}/remove-direction/{departementId}', [MonUtilisateurController::class, 'removeDirection']);
+    });
+});
+
+
+
+
+
+
+// CORRIGEZ L'ORDRE DES ROUTES
+Route::middleware(['auth:sanctum'])->group(function () {
+Route::prefix('roles')->group(function () {
+    // Routes SANS paramètre
+    Route::get('/', [RoleController::class, 'index']);
+    Route::post('/', [RoleController::class, 'store']);
+    Route::get('/stats', [RoleController::class, 'stats']); // Placez AVANT les routes avec {id}
+    
+    // Routes SPÉCIFIQUES avec {id} (doivent être AVANT les routes génériques)
+    Route::get('/{id}/with-details', [RoleController::class, 'showWithDetails']);
+    Route::post('/{id}/assign-permissions', [RoleController::class, 'assignPermissions']);
+    Route::post('/{id}/remove-permission/{permissionId}', [RoleController::class, 'removePermission']);
+    
+    // Routes GÉNÉRIQUES avec {id} (doivent être APRÈS)
+    Route::get('/{id}', [RoleController::class, 'show']);
+    Route::put('/{id}', [RoleController::class, 'update']);
+    Route::delete('/{id}', [RoleController::class, 'destroy']);
+});
+});
+
+
+     // ============ PERMISSIONS ============
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('permissions')->group(function () {
+        // CRUD de base
+        Route::get('/', [PermissionController::class, 'index']);
+        Route::post('/', [PermissionController::class, 'store']);
+        Route::get('/{id}', [PermissionController::class, 'show']);
+        Route::put('/{id}', [PermissionController::class, 'update']);
+        Route::delete('/{id}', [PermissionController::class, 'destroy']);
+        
+        // Vérification d'utilisation
+        Route::get('/{id}/used-by', [PermissionController::class, 'getUsedByRoles']);
+    });
+});
+
+
+
+     // ============ DÉPARTEMENTS ============
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('departements')->group(function () {
+        // CRUD de base
+        Route::get('/', [DepartementController::class, 'index']);
+        Route::post('/', [DepartementController::class, 'store']);
+        Route::get('/{id}', [DepartementController::class, 'show']);
+        Route::put('/{id}', [DepartementController::class, 'update']);
+        Route::delete('/{id}', [DepartementController::class, 'destroy']);
+        
+        // Statistiques
+       // Route::get('/statdepartementd', [DepartementController::class, 'statdepartement']);
+        Route::get('/{id}/with-details', [DepartementController::class, 'getWithDetails']);
+        Route::get('/{id}/available-users', [DepartementController::class, 'getAvailableUsers']);
+        Route::get('/stats/departement', [DepartementController::class, 'statdepartement']);
+
+        
+        // Gestion des utilisateurs
+        Route::post('/{id}/assign-user/{userId}', [DepartementController::class, 'assignUser']);
+        Route::post('/{id}/remove-user/{userId}', [DepartementController::class, 'removeUser']);
+    });
+});
+
+
+//Route::middleware('auth:sanctum')->group(function () {
+
+Route::middleware(['auth:sanctum'])->group(function () {
+   Route::prefix('dashboard')->group(function () {
+        Route::get('/statistique', [MonUtilisateurController::class, 'dashboardStats']);
+        Route::get('/recent-users', [MonUtilisateurController::class, 'recentUsers']);   
+        Route::get('/statistics', [DashboardController::class, 'statistics']);
+        Route::get('/classifiers', [DashboardController::class, 'classifiers']);
+        Route::get('/classifiers/direction/{id}', [DashboardController::class, 'classifiersByDirection']);
+        Route::get('/recent', [DashboardController::class, 'recentActivities']);
+        Route::get('/direction/{id}', [DashboardController::class, 'directionStats']);
+        Route::post('/search', [DashboardController::class, 'advancedSearch']);
+    });
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+Route::middleware(['auth:sanctum'])->group(function () {
+
+Route::prefix('profil')->group(function () {
+    Route::get('/mon-profil', [ProfilController::class, 'monProfil']);
+    Route::get('/utilisateurs/{id}', [ProfilController::class, 'show']);
+    Route::put('/modifier/{id}', [ProfilController::class, 'modifierProfil']);
+    Route::get('/afficher/{id}', [ProfilController::class, 'afficherProfil']);
+    Route::get('/avatar/{filename}', [ProfilController::class, 'getAvatar']); // ✅
+});
+});
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Route::middleware('auth:sanctum')->group(function () {
+// controller pour modules
+Route::get('/modules', [ModuleController::class, 'Getmodule']);
+Route::get('/modules/search', [ModuleController::class, 'searchmodule']);
+Route::post('/modules', [ModuleController::class, 'createmodule']);
+Route::get('/modules/{id}', [ModuleController::class, 'editemodule']);
+Route::put('/modules/{id}', [ModuleController::class, 'updatemodule']);
+Route::delete('/modules/{id}', [ModuleController::class, 'destroy']);
+
+
+
+//controller pour le Dashboard
+Route::get('/declaration-dashboard', [DashboardController::class, 'getDeclarationSummary']);
+Route::post('/declaration-search', [DashboardController::class, 'Searchdeclaration']);
+
+//Dashboadr Note de perception
+Route::get('/note-perception-dashboard', [DashboardController::class, 'getNotePerceptionCountByCentre']);
+Route::get('/note-perception-dashboard/{id}', [DashboardController::class, 'getNotePerceptionCountByCentre_id']);
+
+});
+
+
+
+
+
+
+
+// Route::post('/login', [UtilisateurController::class, 'login'])->name('login');
+
+// //controller utilisateur
+// Route::get('/utilisateurs', [UtilisateurController::class, 'getUtilisateurs']);
+// Route::post('/utilisateurs/search', [UtilisateurController::class, 'searchUtilisateur']);
+// Route::post('/utilisateurs', [UtilisateurController::class, 'createUtilisateur']);
+// Route::get('/utilisateurs/{id}', [UtilisateurController::class, 'editUtilisateur']);
+// Route::put('/utilisateurs/{id}', [UtilisateurController::class, 'updateUtilisateur']);
+// Route::delete('/utilisateurs/{id}', [UtilisateurController::class, 'deleteUtilisateur']);
+
+
+
+
+
+
+//document declarations
+
+
+Route::middleware('auth:sanctum')->group(function () {
+
+
+Route::post('/documents-declaration/upload-multiple', [DocumentDeclarationController::class, 'uploadMultiple']);
+Route::get('/documents-declaration/download/{id}', [DocumentDeclarationController::class, 'download']);
+Route::get('/documents/{id}', [DocumentDeclarationController::class, 'getallpdf']);
+Route::delete('/delete-document/{id}', [DocumentDeclarationController::class, 'deleteDocument']);
+
+
+// Upload multiple (sans OCR backend)
+//Route::post('/documents-declaration/upload-multiple', [DocumentDeclarationController::class, 'uploadMultiple']);
+
+// Mise à jour du texte OCR (appelé par le frontend)
+Route::put('/documents-declaration/{id}/update-text', [DocumentDeclarationController::class, 'updateOCRText']);
+
+// Récupérer le texte OCR
+Route::get('/documents-declaration/{id}/text', [DocumentDeclarationController::class, 'getDocumentText']);
+
+// Recherche avancée
+//Route::post('/documents-declaration/advanced-search', [DocumentDeclarationController::class, 'advancedSearch']);
+// routes/api.php
+Route::post('/documents-declaration/advanced-search/{id_direction}', [DocumentDeclarationController::class, 'advancedSearch']);
+
+// Statistiques OCR
+Route::get('/documents-declaration/ocr-stats', [DocumentDeclarationController::class, 'getOCRStats']);
+
+// Téléchargement
+//Route::get('/documents-declaration/download/{id}', [DocumentDeclarationController::class, 'download']);
+
+// Suppression
+Route::delete('/delete-document/{id}', [DocumentDeclarationController::class, 'destroy']);
+
+
+
+
+
+//Controller pour  Declaration
+Route::get('/declarations', [DeclarationController::class, 'getDeclarations']);
+Route::post('/declarations/search', [DeclarationController::class, 'searchDeclarations']);
+Route::post('/declarations', [DeclarationController::class, 'createdeclaration']);
+Route::put('/declarations/{id}', [DeclarationController::class, 'updatedeclaration']);
+Route::delete('/declarations/{id}', [DeclarationController::class, 'destroy']);
+Route::get('/editdeclaration/{id}', [DeclarationController::class, 'editdeclaration']);
+Route::get('/listedeclaration/{id}', [DeclarationController::class, 'getlistedocument']);
+Route::post('/listedeclaration/{id}', [DeclarationController::class, 'listedocumentdirectionall']);
+Route::post('/searchDeclarationsfiltres/{id}', [DeclarationController::class, 'searchDeclarationsfiltre']);
+Route::get('/details/{id}', [DeclarationController::class, 'editdeclaration']);
+
+
+
+
+
+
+
+
+//controller pour document_noteperception
+
+Route::get('/notes/downloads/{id}', [DocumentNotePerceptionController::class, 'download']);
+Route::get('/notes/download/{id}', [DocumentNotePerceptionController::class, 'getallpdf']);
+Route::delete('/notes/delete/{id}', [DocumentNotePerceptionController::class, 'deleteDocument']);
+Route::post('/notes/upload', [DocumentNotePerceptionController::class, 'uploadMultiple']);
+
+});
+
+
+
+
+
+//controller pour centre ordonnancement
+Route::middleware('auth:sanctum')->group(function () {
+Route::get('centre_ordonnancements/all', [CentreOrdonnancementController::class, 'getAll']);
+Route::post('centre_ordonnancements/search', [CentreOrdonnancementController::class, 'searchcentre']);
+Route::post('centre_ordonnancements', [CentreOrdonnancementController::class, 'addcentre'])->middleware('permission:creer_centre');
+Route::get('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'editcentre']);
+Route::put('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'updatecentre'])->middleware('permission:modifier_centre');
+Route::delete('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'supprimercentre'])->middleware('permission:supprimer_centre'); 
+Route::get('centre', [CentreOrdonnancementController::class, 'getcentre']);
+});
+
+
+
+
+
+//controller pour Classeur
+
+
+
+Route::middleware('auth:sanctum')->group(function () {
+Route::get('/classeurs', [ClasseurController::class, 'getAll']); // Récupérer tous les classeurs
+Route::get('/classeurs/search', [ClasseurController::class, 'searchClasseur']); // Rechercher des classeurs
+Route::post('/classeurs', [ClasseurController::class, 'addClasseur']); 
+//Route::post('/classeurs', [ClasseurController::class, 'addClasseur']) ->middleware('permission:creer_classeur');   
+Route::get('/classeurs/{id}', [ClasseurController::class, 'editClasseur']) ;
+Route::put('/classeurs/{id}', [ClasseurController::class, 'updateClasseur'])->middleware('permission:modifier_classeur');
+Route::delete('/classeurs/{id}', [ClasseurController::class, 'supprimerClasseur'])->middleware('permission:supprimer_classeur');// Supprimer un classeur (mettre à jour le statut)
+Route::get('/classeur', [ClasseurController::class, 'getAllclasseur']);
+});
+
+
+//controller pour Emplacement  creer_emplacement
+Route::middleware('auth:sanctum')->group(function () {
+Route::get('/emplacements', [EmplacementController::class, 'getAll']);
+Route::get('/emplacements/search', [EmplacementController::class, 'searchEmplacement']);
+Route::post('/emplacements', [EmplacementController::class, 'addEmplacement'])->middleware('permission:creer_emplacement');
+Route::get('/emplacements/{id}', [EmplacementController::class, 'editEmplacement']);
+Route::put('/emplacements/{id}', [EmplacementController::class, 'updateEmplacement'])->middleware('permission:modifier_emplacement');
+Route::delete('/emplacements/{id}', [EmplacementController::class, 'supprimerEmplacement'])->middleware('permission:supprimer_emplacement');
+Route::get('/emplacement', [EmplacementController::class, 'getAllemplacement']);
+});
+
+
+
+
+
+
+//controller pour la direction
+// Route::get('/directions', [DirectionController::class, 'Getdirection']);
+// Route::post('/directions/search', [DirectionController::class, 'searchdirection']);
+// Route::get('/directions/{id}', [DirectionController::class, 'editdirection']);
+
+
+
+// routes/api.php
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    Route::post('/directions', [DirectionController::class, 'createdirection'])
+        ->middleware('permission:creer_direction'); // ← Ceci est CRUCIAL
+});
+
+Route::put('/directions/{id}', [DirectionController::class, 'updatedirection']);
+Route::delete('/directions/{id}', [DirectionController::class, 'deletedirection']);
+Route::get('/direction', [DirectionController::class, 'getAlldirection']);
+
+
+
+
+//controller pour le assujetti
+
+
+Route::middleware('auth:sanctum')->group(function () {
+
+Route::get('/assujettis', [AssujettiController::class, 'getassujetti']);
+Route::get('/assujettis/search', [AssujettiController::class, 'searchassujetti']);
+Route::post('/assujettis', [AssujettiController::class, 'createassujetti']);
+Route::get('/assujettis/{id}', [AssujettiController::class, 'editassujetti']);
+Route::put('/assujettis/{id}', [AssujettiController::class, 'updateassujetti']);
+Route::delete('/assujettis/{id}', [AssujettiController::class, 'supprimerassujetti']);
+
+});
+
+
+
+
+
+
+
+//controller pour les notes
+
+Route::middleware('auth:sanctum')->group(function () {
+
+Route::get('/notes', [NotePerceptionController::class, 'getNote']);
+Route::post('/notes/search', [NotePerceptionController::class, 'searchnote']);
+Route::post('/notes', [NotePerceptionController::class, 'createnote']);
+Route::get('/notes/{id}', [NotePerceptionController::class, 'editnote']);
+Route::put('/notes/{id}', [NotePerceptionController::class, 'note']); // mise à jour
+Route::delete('/notes/{id}', [NotePerceptionController::class, 'deletenote']);
+Route::get('/noteid-searchnote/{id}', [NotePerceptionController::class, 'searchnote_idcentre']);
+Route::get('/note-centre/{id}', [NotePerceptionController::class, 'getNote_centre']);
+Route::post('/search-note/{id}', [NotePerceptionController::class, 'searchnote_id']);
+// Route pour la recherche avancée des notes de perception
+Route::post('/notes-perception/advanced-search', [NotePerceptionController::class, 'advancedSearch']);
+
+});
+
+
+//article budgetaire 
+Route::middleware('auth:sanctum')->group(function () {
+Route::get('/article', [ArticleBudgetaireController::class, 'getArticle']); // Liste paginée
+Route::get('/articleall', [ArticleBudgetaireController::class, 'getArticleAll']); // Liste paginée
+Route::post('/search-article', [ArticleBudgetaireController::class, 'searchArticle']); // Recherche
+Route::post('/create-article', [ArticleBudgetaireController::class, 'creerArticle'])->middleware('permission:creer_service_assiette');  // Création
+Route::get('/edit-article/{id}', [ArticleBudgetaireController::class, 'editArticle']); // Lecture d’un article
+Route::put('/update-article/{id}', [ArticleBudgetaireController::class, 'updateArticle'])->middleware('permission:modifier_service_assiette');  // Mise à jour
+Route::delete('delete-article/{id}', [ArticleBudgetaireController::class, 'deleteArticle'])->middleware('permission:supprimer_service_assiette'); // Désactivation
+
+});
+
+
+
+
+
+
+
+
+//Authentification
+
+
+
+
+
+
+
+// CRUD users
+Route::middleware('auth:sanctum')->group(function () {
+Route::apiResource('users', MonUserController::class);
+
+// Assignation relations
+Route::post('users/{id}/roles', [MonUserController::class,'assignRoles']);
+Route::post('users/{id}/droits', [MonUserController::class,'assignDroits']);
+Route::post('users/{id}/groupes', [MonUserController::class,'assignGroupes']);
+
+// Droits finaux
+Route::get('users/{id}/droits-finaux', [MonUserController::class,'droitsFinaux']);
+});

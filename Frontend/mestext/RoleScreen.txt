@@ -1,0 +1,289 @@
+import React, { useState } from 'react';
+import { useUser } from '../Composant/UserContext';
+import Swal from 'sweetalert2';
+import { 
+  FaEdit, 
+  FaTrash, 
+  FaEye, 
+  FaPlus, 
+  FaSearch,
+  FaUserShield,
+  FaKey,
+  FaFilter,
+  FaChevronLeft,
+  FaChevronRight,
+  FaArrowLeft
+} from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+
+const Roles = () => {
+  const { roles, deleteRole, getRoleWithDetails } = useUser();
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const filteredRoles = roles.filter(role =>
+    search === '' ||
+    role.nom.toLowerCase().includes(search.toLowerCase()) ||
+    role.description.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredRoles.length / itemsPerPage);
+  const paginatedRoles = filteredRoles.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleDelete = (id) => {
+    if (id === '1') {
+      Swal.fire('Erreur', 'Impossible de supprimer le rôle Admin', 'error');
+      return;
+    }
+    
+    Swal.fire({
+      title: 'Êtes-vous sûr ?',
+      text: "Cette action est irréversible !",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteRole(id);
+        Swal.fire('Supprimé !', 'Le rôle a été supprimé.', 'success');
+      }
+    });
+  };
+
+  return (
+    <div className="roles-container">
+      {/* Header */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h2 className="h3 mb-0">
+                <FaUserShield className="mr-2 text-primary" />
+                Gestion des Rôles
+              </h2>
+              <p className="text-muted mb-0">
+                Gérez les rôles et leurs permissions
+              </p>
+            </div>
+            
+            <div className="d-flex">
+              <Link 
+                to="/gestion-utilisateurs/dashboard"
+                className="btn btn-outline-secondary mr-2"
+              >
+                <FaArrowLeft className="mr-1" />
+                Retour
+              </Link>
+              
+              <Link 
+                to="/gestion-utilisateurs/roles/nouveau"
+                className="btn btn-primary"
+              >
+                <FaPlus className="mr-1" />
+                Nouveau Rôle
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtres et recherche */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <div className="row">
+            <div className="col-md-6">
+              <div className="input-group">
+                <div className="input-group-prepend">
+                  <span className="input-group-text bg-white border-right-0">
+                    <FaSearch className="text-muted" />
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  className="form-control border-left-0"
+                  placeholder="Rechercher un rôle par nom ou description..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="col-md-3">
+              <div className="input-group">
+                <div className="input-group-prepend">
+                  <span className="input-group-text bg-white">
+                    <FaFilter className="text-muted" />
+                  </span>
+                </div>
+                <select className="form-control">
+                  <option>Tous les rôles</option>
+                  <option>Avec permissions</option>
+                  <option>Sans permissions</option>
+                </select>
+              </div>
+            </div>
+            <div className="col-md-3 text-right">
+              <div className="text-muted">
+                {roles.length} rôle(s) au total
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grille de rôles */}
+      <div className="row">
+        {paginatedRoles.map((role, index) => {
+          const roleDetails = getRoleWithDetails(role.id);
+          
+          return (
+            <div key={role.id} className="col-lg-4 col-md-6 mb-4">
+              <div className="card shadow-sm h-100 border-0 hover-lift">
+                <div className="card-header bg-gradient-primary text-white">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">
+                      <FaUserShield className="mr-2" />
+                      {role.nom}
+                    </h5>
+                    <span className="badge badge-light">
+                      {roleDetails?.users?.length || 0} utilisateurs
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="card-body">
+                  <p className="card-text text-muted mb-3">
+                    {role.description || 'Aucune description'}
+                  </p>
+                  
+                  <div className="mb-3">
+                    <small className="text-uppercase text-muted d-block mb-2">
+                      <FaKey className="mr-1" /> Permissions
+                    </small>
+                    <div className="d-flex flex-wrap gap-1">
+                      {roleDetails?.permissions?.slice(0, 3).map(perm => (
+                        <span key={perm.id} className="badge badge-info">
+                          {perm.code}
+                        </span>
+                      ))}
+                      {roleDetails?.permissions?.length > 3 && (
+                        <span className="badge badge-light">
+                          +{roleDetails.permissions.length - 3} plus
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="card-footer bg-white border-top">
+                  <div className="d-flex justify-content-between">
+                    <Link 
+                      to={`/gestion-utilisateurs/roles/${role.id}`}
+                      className="btn btn-outline-info btn-sm"
+                    >
+                      <FaEye className="mr-1" /> Détails
+                    </Link>
+                    <div>
+                      <Link 
+                        to={`/gestion-utilisateurs/roles/${role.id}/modifier`}
+                        className="btn btn-outline-warning btn-sm mr-2"
+                      >
+                        <FaEdit />
+                      </Link>
+                      <button 
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => handleDelete(role.id)}
+                        disabled={role.id === '1'}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Message si aucun résultat */}
+      {paginatedRoles.length === 0 && (
+        <div className="row">
+          <div className="col-12">
+            <div className="card shadow-sm border-0">
+              <div className="card-body text-center py-5">
+                <div className="mb-3">
+                  <FaUserShield className="text-muted" size={64} />
+                </div>
+                <h4 className="text-muted mb-2">Aucun rôle trouvé</h4>
+                <p className="text-muted mb-4">
+                  {search ? 'Essayez avec d\'autres termes de recherche' : 'Commencez par créer votre premier rôle'}
+                </p>
+                {!search && (
+                  <Link 
+                    to="/gestion-utilisateurs/roles/nouveau"
+                    className="btn btn-primary"
+                  >
+                    <FaPlus className="mr-2" />
+                    Créer un rôle
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-center mt-4">
+          <nav>
+            <ul className="pagination">
+              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                <button 
+                  className="page-link"
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <FaChevronLeft />
+                </button>
+              </li>
+              
+              {[...Array(totalPages)].map((_, i) => (
+                <li key={i + 1} className={`page-item ${i + 1 === currentPage ? 'active' : ''}`}>
+                  <button 
+                    className="page-link"
+                    onClick={() => setCurrentPage(i + 1)}
+                  >
+                    {i + 1}
+                  </button>
+                </li>
+              ))}
+              
+              <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                <button 
+                  className="page-link"
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <FaChevronRight />
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Roles;

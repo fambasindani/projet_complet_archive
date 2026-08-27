@@ -1,0 +1,231 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  FaUserShield, 
+  FaKey, 
+  FaUsers, 
+  FaEdit,
+  FaArrowLeft
+} from 'react-icons/fa';
+
+const RoleDetailScreen = ({ role, onBack }) => {
+  // Debug
+  console.log('RoleDetailScreen - Props reçues:', { role, onBack });
+  
+  if (!role) {
+    console.log('RoleDetailScreen - Rôle manquant');
+    return (
+      <div className="container mt-5">
+        <div className="alert alert-warning">
+          <h4>Erreur d'affichage</h4>
+          <p>Les données du rôle sont manquantes.</p>
+          <button 
+            onClick={onBack}
+            className="btn btn-secondary"
+          >
+            Retour
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="role-details-page">
+      {/* Header */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h2 className="h3 mb-0">
+                <FaUserShield className="mr-2 text-primary" />
+                Détails du rôle
+              </h2>
+              <p className="text-muted mb-0">
+                {role.nom}
+              </p>
+            </div>
+            
+            <div className="d-flex">
+              <button 
+                onClick={onBack}
+                className="btn btn-outline-secondary mr-2"
+              >
+                <FaArrowLeft className="mr-1" />
+                Retour
+              </button>
+              
+              <Link 
+                to={`/gestion-utilisateurs/roles/${role.id}/modifier`}
+                className="btn btn-primary"
+              >
+                <FaEdit className="mr-1" />
+                Modifier
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="row">
+        <div className="col-lg-8">
+          <div className="card shadow-sm border-0 mb-4">
+            <div className="card-body">
+              <div className="mb-4">
+                <h5 className="card-title mb-3">Informations du rôle</h5>
+                
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="text-muted small d-block">Nom du rôle</label>
+                    <h5 className="mb-0">{role.nom}</h5>
+                  </div>
+                  
+                  <div className="col-md-6 mb-3">
+                    <label className="text-muted small d-block">
+                      <FaUsers className="mr-1" />
+                      Utilisateurs
+                    </label>
+                    <h5 className="mb-0">
+                      <span className="badge badge-primary">
+                        {role.users?.length || 0}
+                      </span>
+                    </h5>
+                  </div>
+                </div>
+                
+                <div className="mb-3">
+                  <label className="text-muted small d-block">Description</label>
+                  <p className="mb-0">
+                    {role.description || 'Aucune description'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Permissions */}
+              <div className="mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="card-title mb-0">
+                    <FaKey className="mr-2" />
+                    Permissions ({role.permissions?.length || 0})
+                  </h5>
+                </div>
+
+                {role.permissions && role.permissions.length > 0 ? (
+                  <div className="row">
+                    {role.permissions.map(perm => (
+                      <div key={perm.id} className="col-md-6 mb-3">
+                        <div className="permission-detail-card">
+                          <div className="d-flex align-items-start">
+                            <FaKey className="mr-3 mt-1 text-primary" />
+                            <div>
+                              <h6 className="mb-1">{perm.code}</h6>
+                              <p className="text-muted small mb-0">
+                                {perm.description || 'Aucune description'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="alert alert-info">
+                    Aucune permission attribuée à ce rôle
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar - Utilisateurs */}
+        <div className="col-lg-4">
+          <div className="card shadow-sm border-0">
+            <div className="card-header bg-light">
+              <h6 className="mb-0">
+                <FaUsers className="mr-2" />
+                Utilisateurs avec ce rôle
+              </h6>
+            </div>
+            <div className="card-body">
+              {role.users && role.users.length > 0 ? (
+                <div className="users-list">
+                  {role.users.map(user => (
+                    <div key={user.id} className="user-item mb-3">
+                      <div className="d-flex align-items-center">
+                        <div className="avatar-circle mr-3">
+                          {user.prenom?.[0]}{user.nom?.[0]}
+                        </div>
+                        <div>
+                          <div className="font-weight-bold">
+                            {user.prenom} {user.nom}
+                          </div>
+                          <small className="text-muted d-block">
+                            {user.email}
+                          </small>
+                          <small className={`badge badge-${user.statut === 'active' ? 'success' : 
+                                            user.statut === 'inactive' ? 'warning' : 'danger'}`}>
+                            {user.statut}
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted text-center mb-0">
+                  Aucun utilisateur avec ce rôle
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <style jsx>{`
+        .role-details-page {
+          padding: 20px;
+          background: #f8f9fa;
+          min-height: calc(100vh - 76px);
+        }
+        
+        .permission-detail-card {
+          padding: 12px;
+          border: 2px solid #e9ecef;
+          border-radius: 6px;
+          background: white;
+        }
+        
+        .avatar-circle {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(45deg, #007bff, #6610f2);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 14px;
+          flex-shrink: 0;
+        }
+        
+        .users-list {
+          max-height: 400px;
+          overflow-y: auto;
+        }
+        
+        .user-item {
+          padding: 10px;
+          border-bottom: 1px solid #f1f1f1;
+        }
+        
+        .user-item:last-child {
+          border-bottom: none;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default RoleDetailScreen;
