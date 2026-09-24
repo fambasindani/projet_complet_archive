@@ -12,9 +12,9 @@ class Role extends Model
     
     protected $fillable = ['nom', 'description'];
 
-    protected $withCount = ['monutilisateurs'];
+    protected $withCount = ['MonUtilisateurs'];
 
-    public function monutilisateurs()
+    public function MonUtilisateurs()
     {
         return $this->belongsToMany(MonUtilisateur::class, 'user_role', 'role_id', 'user_id');
     }
@@ -28,3 +28,4 @@ class Role extends Model
    
 
 }
+

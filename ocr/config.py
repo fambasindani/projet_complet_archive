@@ -11,5 +11,8 @@ class Config:
 
     @classmethod
     def init_app(cls, app):
-        if os.name == 'nt':
+        # Applique le chemin Tesseract seulement s'il existe réellement
+        # (évite d'utiliser un chemin Windows sur Linux, où pytesseract
+        #  retombe automatiquement sur /usr/bin/tesseract)
+        if cls.TESSERACT_PATH and os.path.exists(cls.TESSERACT_PATH):
             pytesseract.pytesseract.tesseract_cmd = cls.TESSERACT_PATH

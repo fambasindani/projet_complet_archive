@@ -10,7 +10,6 @@ import { useHistory } from "react-router-dom";
 import AdvancedSearchNoteModal from "../Modals/AdvancedSearchNoteModal";
 import {
   FaFolder,
-  FaFileAlt,
   FaSearch,
   FaSync,
   FaArrowRight,
@@ -40,8 +39,6 @@ import {
   FaBoxes,
   FaRegBuilding,
   FaRegFileAlt,
-  FaRegCalendarAlt,
-  FaRegClock,
   FaChevronUp,
   FaChevronDown,
   FaMicroscope,
@@ -116,6 +113,7 @@ const Tableaudebordnote = () => {
     if (token) {
       fetchAllData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // 🔹 Mise à jour quand la page change
@@ -123,6 +121,7 @@ const Tableaudebordnote = () => {
     if (token && !loading) {
       fetchCentres();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   // 🔹 Obtenir les en-têtes d'authentification
@@ -313,22 +312,6 @@ const Tableaudebordnote = () => {
     } catch {
       return "";
     }
-  };
-
-  // 🔹 Obtenir l'icône du classeur
-  const getClasseurIcon = (nom: string) => {
-    const type = nom?.toLowerCase() || "";
-    if (type.includes("note")) return <FaFileInvoice className="text-indigo-600" size={18} />;
-    if (type.includes("diplôme") || type.includes("diplome")) return <FaFileAlt className="text-emerald-600" size={18} />;
-    if (type.includes("arrêté") || type.includes("arrete")) return <FaFilePdf className="text-red-600" size={18} />;
-    if (type.includes("lettre")) return <FaFileWord className="text-sky-600" size={18} />;
-    return <FaFolder className="text-amber-600" size={18} />;
-  };
-
-  // 🔹 Obtenir le code article à partir de l'ID
-  const getArticleCode = (articleId: any) => {
-    const article: any = articles.find((a: any) => a.id === parseInt(articleId));
-    return article ? article.code : articleId;
   };
 
   // 🔹 Cartes statistiques premium

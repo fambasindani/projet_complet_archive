@@ -1,0 +1,46 @@
+# ── Déchets / artefacts ──
+*.zip
+*.log
+*.bak
+*.tmp
+
+# Dump base de données (ne pas versionner les données)
+bdarchive.sql
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Node / build frontend
+node_modules/
+build/
+dist/
+
+# Backend Laravel
+backend/vendor/
+backend/storage/*.key
+backend/storage/logs/*.log
+backend/bootstrap/cache/*.php
+
+# .NET
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+*.iml
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Divers
+installer_scanner_wia.ps1

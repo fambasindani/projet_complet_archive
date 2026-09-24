@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, SCANNER_SERVICE_URL } from "../config";
 import GetTokenOrRedirect from "../Composant/getTokenOrRedirect";
 import { toast } from "../Composant/Toast";
 import {
@@ -130,7 +130,7 @@ const ModalNote = ({ modalId, isOpen, onClose, monid, projet, idclasseur, idcent
     setScanning(true);
     try {
       const response = await axios.post(
-        "http://localhost:9000/scan",
+        `${SCANNER_SERVICE_URL}/scan`,
         {},
         { headers: { "Content-Type": "application/json" } }
       );

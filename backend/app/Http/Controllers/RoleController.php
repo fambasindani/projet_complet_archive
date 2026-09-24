@@ -15,7 +15,7 @@ class RoleController extends Controller
      // Liste des rôles
  /*    public function index(Request $request)
     {
-        $query = Role::withCount('monutilisateurs');
+        $query = Role::withCount('MonUtilisateurs');
         
         // Recherche
         if ($request->has('search') && !empty($request->search)) {
@@ -42,7 +42,7 @@ public function index(Request $request)
 {
     // AJOUTEZ 'permissions' DANS withCount POUR INCLURE LES RELATIONS
     $query = Role::with(['permissions:id,code,description'])
-                ->withCount(['monutilisateurs', 'permissions']);
+                ->withCount(['MonUtilisateurs as users_count', 'permissions']);
     
     // Recherche
     if ($request->has('search') && !empty($request->search)) {
@@ -98,7 +98,7 @@ public function index(Request $request)
             
             DB::commit();
             
-            $role->load(['permissions', 'monutilisateurs']);
+            $role->load(['permissions', 'MonUtilisateurs']);
 
             LogHelper::create('roles', $role->id, 'Création du rôle : ' . $role->nom);
             
@@ -120,7 +120,7 @@ public function index(Request $request)
         // Voir les détails d'un rôle
     public function show($id)
     {
-        $role = Role::with(['permissions', 'monutilisateurs'])->find($id);
+        $role = Role::with(['permissions', 'MonUtilisateurs'])->find($id);
         
         if (!$role) {
             return response()->json([
@@ -185,7 +185,7 @@ public function index(Request $request)
             
             DB::commit();
             
-            $role->load(['permissions', 'monutilisateurs']);
+            $role->load(['permissions', 'MonUtilisateurs']);
 
             LogHelper::update('roles', $role->id, 'Modification du rôle : ' . $role->nom);
             
@@ -280,7 +280,7 @@ public function destroy($id)
         $role->permissions()->detach();
         
         // Détacher tous les utilisateurs - CORRIGEZ ICI
-        $role->monutilisateurs()->detach(); // Changé de users() à monutilisateurs()
+        $role->MonUtilisateurs()->detach(); // Changé de users() à MonUtilisateurs()
 
         $roleName = $role->nom;
         
@@ -382,7 +382,7 @@ public function destroy($id)
 {
     $role = Role::with([
         'permissions:id,code,description',
-        'monutilisateurs:id,nom,prenom,email,statut'
+        'MonUtilisateurs:id,nom,prenom,email,statut'
     ])->find($id);
     
     if (!$role) {
@@ -394,7 +394,7 @@ public function destroy($id)
     
     // Ajouter les counts
     $role->permissions_count = $role->permissions->count();
-    $role->monutilisateurs_count = $role->monutilisateurs->count();
+    $role->MonUtilisateurs_count = $role->MonUtilisateurs->count();
     
     return response()->json([
         'success' => true,
@@ -408,7 +408,7 @@ public function showWithDetails($id)
 {
     $role = Role::with([
         'permissions:id,code,description',
-        'monutilisateurs:id,nom,prenom,email,statut'
+        'MonUtilisateurs:id,nom,prenom,email,statut'
     ])->find($id);
     
     if (!$role) {
@@ -420,7 +420,7 @@ public function showWithDetails($id)
     
     // Ajouter les counts si nécessaire
     $role->permissions_count = $role->permissions->count();
-    $role->monutilisateurs_count = $role->monutilisateurs->count();
+    $role->MonUtilisateurs_count = $role->MonUtilisateurs->count();
     
     return response()->json([
         'success' => true,
@@ -438,7 +438,7 @@ public function getWithDetails($id)
         // Obtenir les détails complets d'un rôle
     public function getWithDetails($id)
     {
-        $role = Role::with(['permissions', 'monutilisateurs'])->find($id);
+        $role = Role::with(['permissions', 'MonUtilisateurs'])->find($id);
         
         if (!$role) {
             return response()->json([
@@ -470,3 +470,4 @@ public function getWithDetails($id)
     }
 
 }
+

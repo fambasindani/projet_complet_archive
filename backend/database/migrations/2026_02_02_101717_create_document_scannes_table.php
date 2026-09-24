@@ -25,7 +25,7 @@ class CreateDocumentScannesTable extends Migration
             $table->string('type_document')->default('pdf');
             $table->foreignId('id_declaration')->nullable()->constrained('declarations')->nullOnDelete();
             $table->foreignId('id_classeur')->nullable()->constrained('classeurs')->nullOnDelete();
-            $table->foreignId('uploaded_by')->nullable()->constrained('monutilisateurs')->nullOnDelete();
+            $table->foreignId('uploaded_by')->nullable()->constrained('MonUtilisateurs')->nullOnDelete();
             $table->timestamp('scanned_at')->nullable();
             $table->string('source_scanner')->nullable();
             $table->json('metadata')->nullable();
@@ -46,3 +46,4 @@ class CreateDocumentScannesTable extends Migration
         Schema::dropIfExists('document_scannes');
     }
 }
+

@@ -14,13 +14,21 @@ import textwrap
 import time
 from dotenv import load_dotenv
 
-load_dotenv()
+# Charge .env situé à côté de ce fichier (robuste quel que soit le cwd)
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 api = Api(app)
+
+# Applique le chemin Tesseract (Windows/Linux) défini dans config.py / env
+try:
+    from config import Config
+    Config.init_app(app)
+except Exception as e:
+    logger.warning(f"Config.init_app ignoré: {e}")
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'pdf'}

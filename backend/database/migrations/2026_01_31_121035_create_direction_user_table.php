@@ -27,7 +27,7 @@ class CreateDirectionUserTable extends Migration
           ->onDelete('cascade');
 
     $table->foreign('user_id')
-          ->references('id')->on('monutilisateurs')
+          ->references('id')->on('MonUtilisateurs')
           ->onDelete('cascade');
 
     $table->unique(['direction_id', 'user_id']);
@@ -45,3 +45,4 @@ class CreateDirectionUserTable extends Migration
         Schema::dropIfExists('direction_user');
     }
 }
+

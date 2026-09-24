@@ -43,3 +43,4 @@ class Utilisateur extends Authenticatable
         return $this->belongsTo(CentreOrdonnancement::class, 'id_centre');
     }
 }
+

@@ -143,7 +143,7 @@ const NoteperceptionScreen = () => {
           )}
         </div>
       </div>
-      {showUploadModal && selectedNoteForUpload && (<FileUploadModal documentId={selectedNoteForUpload.id} id_classeur={selectedNoteForUpload.id_classeur || selectedNoteForUpload.classeur?.id} onClose={() => setShowUploadModal(false)} token={token} nom_fichier="note de perecption" uploadType="note" id_ministere={selectedNoteForUpload.id_ministere} />)}
+      {showUploadModal && selectedNoteForUpload && (<FileUploadModal documentId={selectedNoteForUpload.id} id_classeur={selectedNoteForUpload.id_classeur || selectedNoteForUpload.classeur?.id} onClose={() => setShowUploadModal(false)} token={token} nom_fichier={selectedNoteForUpload.assujetti?.nom_raison_sociale || selectedNoteForUpload.nom_assujetti || "note de perception"} uploadType="note" id_ministere={selectedNoteForUpload.id_ministere} />)}
                 
             <ConfirmModal
                 isOpen={!!confirmItem}

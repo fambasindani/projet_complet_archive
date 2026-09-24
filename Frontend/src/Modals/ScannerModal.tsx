@@ -19,6 +19,7 @@ import {
 } from 'react-icons/fa';
 import DetailModal from "./DetailModal";
 import ConfirmModal from "./ConfirmModal";
+import { OCR_URL } from "../config";
 
 
 const ScannerModal = ({ onClose, onScanComplete }) => {
@@ -36,9 +37,8 @@ const ScannerModal = ({ onClose, onScanComplete }) => {
     const [selectedPDF, setSelectedPDF] = useState(null);
     const [loadingPDFs, setLoadingPDFs] = useState(false);
 
-    // Constante pour le port
-    const API_PORT = 5000;
-    const BASE_URL = `http://localhost:${API_PORT}`;
+    // Constante pour le port (depuis .env via config.ts)
+    const BASE_URL = OCR_URL;
 
     useEffect(() => {
         checkScannerStatus();
@@ -77,11 +77,11 @@ const ScannerModal = ({ onClose, onScanComplete }) => {
             });
             
         } catch (error) {
-            console.error(`❌ Scanner non accessible sur le port ${API_PORT}:`, error);
+            console.error(`❌ Scanner non accessible sur le port ${OCR_URL}:`, error);
             setScannerStatus({
                 serverConnected: false,
                 scannerDetected: false,
-                lastError: `Serveur non accessible sur le port ${API_PORT}`
+                lastError: `Serveur non accessible sur le port ${OCR_URL}`
             });
             setScannedPDFs([]);
             setSelectedPDF(null);
@@ -245,7 +245,7 @@ const ScannerModal = ({ onClose, onScanComplete }) => {
             message = "Le scanner met trop de temps à répondre. Vérifiez le document et réessayez.";
         } else if (message.includes("network") || message.includes("Network")) {
             title = "Problème de connexion";
-            message = `Impossible de communiquer avec le serveur scanner sur le port ${API_PORT}.`;
+            message = `Impossible de communiquer avec le serveur scanner sur le port ${OCR_URL}.`;
         }
         
         toast.error(message);
@@ -485,7 +485,7 @@ const ScannerModal = ({ onClose, onScanComplete }) => {
                                         <span className="text-red-600">
                                             Serveur non connecté - Démarrez l'application Windows Scanner
                                             <div className="small mt-1">
-                                                Port utilisé : {API_PORT}
+                                                Port utilisé : {OCR_URL}
                                             </div>
                                         </span>
                                     )}
@@ -557,7 +557,7 @@ const ScannerModal = ({ onClose, onScanComplete }) => {
                                         {!scannerStatus.serverConnected && (
                                             <div className="p-4 rounded-lg-lg border border-slate-200 p-4 rounded-lg-lg border border-slate-200-danger mt-3 small">
                                                 <strong>Action requise :</strong> 
-                                                Ouvrez l'application "WindowScan.exe" et assurez-vous qu'elle utilise le port {API_PORT}
+                                                Ouvrez l'application "WindowScan.exe" et assurez-vous qu'elle utilise le port {OCR_URL}
                                             </div>
                                         )}
                                         {scannerStatus.serverConnected && !scannerStatus.scannerDetected && (
@@ -757,4 +757,5 @@ const ScannerModal = ({ onClose, onScanComplete }) => {
 };
 
 export default ScannerModal;
+
 

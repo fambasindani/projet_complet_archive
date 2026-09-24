@@ -128,10 +128,13 @@ const AdvancedSearchModal = ({
 
     setLoading(true);
     try {
+      const userDepartements = JSON.parse(localStorage.getItem("departements")) || [];
+      const allDirectionIds = userDepartements.map((d) => d.id).join(",");
+
       const params = {
         ...searchParams,
         page,
-        direction_ids: searchParams.direction_ids || undefined,
+        direction_ids: allDirectionIds,
       };
 
       const response = await axios.post(
@@ -349,30 +352,6 @@ const AdvancedSearchModal = ({
                   onChange={(e) => setSearchParams({ ...searchParams, date_fin: e.target.value, page: 1 })}
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5 flex items-center gap-1.5">
-                <FaBuilding size={10} className="text-slate-400" /> Direction supplémentaire (optionnel)
-              </label>
-              <select
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-60"
-                value={searchParams.direction_ids}
-                onChange={(e) => setSearchParams({ ...searchParams, direction_ids: e.target.value, page: 1 })}
-                disabled={loadingDirections}
-              >
-                <option value="">Aucune direction supplémentaire</option>
-                {filteredDirections.map((dir) => (
-                  <option key={dir.id} value={dir.id}>
-                    {dir.sigle} — {dir.nom}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] font-medium text-slate-400 mt-1.5">
-                {filteredDirections.length > 0
-                  ? `${filteredDirections.length} direction(s) disponible(s) en plus de la vôtre`
-                  : "Aucune autre direction disponible"}
-              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between gap-3 pt-1">

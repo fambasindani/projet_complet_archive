@@ -272,8 +272,8 @@ const Directions = () => {
 
   // derived stats for cards (fallback sur pagination.total si stats.total = 0)
   const totalDirections = stats.total || pagination.total || directions.length;
-  const avecUsers = stats.directions_avec_utilisateurs || directions.filter((d) => (d.monutilisateurs_count || 0) > 0).length;
-  const affectations = stats.total_affectations ?? directions.reduce((acc, d) => acc + (d.monutilisateurs_count || 0), 0);
+  const avecUsers = stats.directions_avec_utilisateurs || directions.filter((d) => (d.users_count || 0) > 0).length;
+  const affectations = stats.total_affectations ?? directions.reduce((acc, d) => acc + (d.users_count || 0), 0);
 
   const statsCards = [
     {
@@ -457,8 +457,8 @@ const Directions = () => {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${ (direction.monutilisateurs_count || 0) > 0 ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20" : "bg-slate-50 text-slate-600 ring-slate-200"}`}>
-                        <FaUsers className="text-[11px] opacity-70" /> {direction.monutilisateurs_count || 0} utilisateur(s)
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${ (direction.users_count || 0) > 0 ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20" : "bg-slate-50 text-slate-600 ring-slate-200"}`}>
+                        <FaUsers className="text-[11px] opacity-70" /> {direction.users_count || 0} utilisateur(s)
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
@@ -643,7 +643,7 @@ const Directions = () => {
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600 ring-1 ring-sky-200"><FaUsers /></span>
                     <div className="text-sm">
                       <p className="font-semibold text-sky-900">Informations sur les utilisateurs</p>
-                      <p className="text-sky-700">Cette direction a <strong>{editingDirection.monutilisateurs_count || 0}</strong> utilisateur(s) assigné(s)</p>
+                      <p className="text-sky-700">Cette direction a <strong>{editingDirection.users_count || 0}</strong> utilisateur(s) assigné(s)</p>
                     </div>
                   </div>
                 )}

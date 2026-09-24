@@ -38,11 +38,12 @@ class LogHelper
 
     public static function login(?string $description = null): Log
     {
-        return self::log('LOGIN', 'monutilisateurs', Auth::id(), $description ?? 'Connexion réussie');
+        return self::log('LOGIN', 'MonUtilisateurs', Auth::id(), $description ?? 'Connexion réussie');
     }
 
     public static function logout(?string $description = null): Log
     {
-        return self::log('LOGOUT', 'monutilisateurs', Auth::id(), $description ?? 'Déconnexion');
+        return self::log('LOGOUT', 'MonUtilisateurs', Auth::id(), $description ?? 'Déconnexion');
     }
 }
+

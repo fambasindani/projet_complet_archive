@@ -41,7 +41,7 @@ const DirectionDetailScreen = (props) => {
 
 
   const [direction, setDirection] = useState(props?.direction || null);
-  const [assignedUsers, setAssignedUsers] = useState(props?.direction?.monutilisateurs || []);
+  const [assignedUsers, setAssignedUsers] = useState(props?.direction?.mon_utilisateurs || []);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loading, setLoading] = useState(!props?.direction);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -78,8 +78,8 @@ const DirectionDetailScreen = (props) => {
         const directionData = response.data.data;
         setDirection(directionData);
 
-        if (directionData.monutilisateurs) {
-          setAssignedUsers(directionData.monutilisateurs);
+        if (directionData.mon_utilisateurs) {
+          setAssignedUsers(directionData.mon_utilisateurs);
         }
 
         await fetchAvailableUsers();

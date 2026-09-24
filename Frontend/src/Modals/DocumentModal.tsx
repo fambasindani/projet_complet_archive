@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, SCANNER_SERVICE_URL } from "../config";
 import GetTokenOrRedirect from "../Composant/getTokenOrRedirect";
 import {
   FaCloudUploadAlt,
@@ -109,7 +109,11 @@ const DocumentModal = ({ modalId, isOpen, onClose, monid, projet, idclasseur, ve
   };
 
   const handleDownload = (id) => {
-    window.open(`${API_BASE_URL}/documents-declaration/download/${id}`, "_blank");
+    if (apiEndpoint === 'notes/download') {
+      window.open(`${API_BASE_URL}/notes/downloads/${id}`, "_blank");
+    } else {
+      window.open(`${API_BASE_URL}/documents-declaration/download/${id}`, "_blank");
+    }
   };
 
   const handleDelete = (id) => {
@@ -149,7 +153,7 @@ const DocumentModal = ({ modalId, isOpen, onClose, monid, projet, idclasseur, ve
     setScanning(true);
     try {
       const response = await axios.post(
-        "http://localhost:9000/scan",
+        `${SCANNER_SERVICE_URL}/scan`,
         {},
         {
           headers: {

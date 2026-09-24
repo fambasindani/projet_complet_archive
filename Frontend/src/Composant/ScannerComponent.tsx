@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Dynamsoft from "dwt";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 export default function ScannerComponent() {
   const [DWObject, setDWObject] = useState(null);
@@ -80,7 +81,7 @@ export default function ScannerComponent() {
         formData.append("file", file);
 
         axios
-          .post("http://localhost:8000/api/upload-scan", formData, {
+          .post(`${API_BASE_URL}/upload-scan`, formData, {
             headers: {
               "Content-Type": "multipart/form-data",
             },

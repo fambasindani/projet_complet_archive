@@ -43,7 +43,7 @@ const RoleViewScreen = () => {
 
   const isAdmin = roleDetails.nom === 'Admin';
   const permissions = roleDetails.permissions || [];
-  const users = roleDetails.monutilisateurs || roleDetails.users || [];
+  const users = roleDetails.mon_utilisateurs || roleDetails.users || [];
   const permCount = permissions.length;
   const userCount = users.length;
 

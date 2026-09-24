@@ -16,9 +16,9 @@ class Departement extends Model
     ];
 
      // Relations
-    public function monutilisateurs()
+    public function MonUtilisateurs()
     {
-        return $this->belongsToMany(Monutilisateur::class, 'direction_user', 'direction_id', 'user_id');
+        return $this->belongsToMany(MonUtilisateur::class, 'direction_user', 'direction_id', 'user_id');
     }
 
        public function declarations()
@@ -26,3 +26,4 @@ class Departement extends Model
         return $this->hasMany(Declaration::class, 'id_direction');
     }
 }
+

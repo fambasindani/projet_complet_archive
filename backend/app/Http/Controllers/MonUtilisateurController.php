@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Monutilisateur;
+use App\Models\MonUtilisateur;
 use App\Models\Role;
 use App\Models\Departement;
 use Illuminate\Support\Facades\Hash;
@@ -93,7 +93,7 @@ class MonUtilisateurController extends Controller
         \App\Models\Log::create([
             'user_id'     => $user->id,
             'action'      => 'LOGIN',
-            'table_name'  => 'monutilisateurs',
+            'table_name'  => 'MonUtilisateurs',
             'record_id'   => $user->id,
             'description' => 'Connexion réussie : ' . $user->nom . ' ' . $user->prenom,
             'ip_address'  => $request->ip(),
@@ -203,7 +203,7 @@ class MonUtilisateurController extends Controller
     // Liste paginée des utilisateurs
     public function index(Request $request)
     {
-        $query = Monutilisateur::with(['roles', 'departements']);
+        $query = MonUtilisateur::with(['roles', 'departements']);
 
         // Recherche - échappement LIKE
         if ($request->filled('search')) {
@@ -238,7 +238,7 @@ class MonUtilisateurController extends Controller
         $validator = Validator::make($request->all(), [
             'nom' => 'required|string|max:50',
             'prenom' => 'required|string|max:50',
-            'email' => 'required|email|unique:monutilisateurs',
+            'email' => 'required|email|unique:MonUtilisateurs',
             'password' => 'required|string|min:6',
             'statut' => 'required|in:active,inactive,bloqué',
             'role_ids' => 'array',
@@ -256,7 +256,7 @@ class MonUtilisateurController extends Controller
         
         DB::beginTransaction();
         try {
-            $user = Monutilisateur::create([
+            $user = MonUtilisateur::create([
                 'nom' => $request->nom,
                 'prenom' => $request->prenom,
                 'email' => $request->email,
@@ -279,7 +279,7 @@ class MonUtilisateurController extends Controller
             
             $user->load(['roles', 'departements']);
 
-            LogHelper::create('monutilisateurs', $user->id, 'Création de l\'utilisateur : ' . $user->nom . ' ' . $user->prenom);
+            LogHelper::create('MonUtilisateurs', $user->id, 'Création de l\'utilisateur : ' . $user->nom . ' ' . $user->prenom);
             
             return response()->json([
                 'success' => true,
@@ -300,7 +300,7 @@ class MonUtilisateurController extends Controller
      // Voir les détails d'un utilisateur
     public function show($id)
     {
-        $user = Monutilisateur::with(['roles', 'departements'])->find($id);
+        $user = MonUtilisateur::with(['roles', 'departements'])->find($id);
         
         if (!$user) {
             return response()->json([
@@ -319,7 +319,7 @@ class MonUtilisateurController extends Controller
       // Modifier un utilisateur
     public function update(Request $request, $id)
     {
-        $user = Monutilisateur::find($id);
+        $user = MonUtilisateur::find($id);
         
         if (!$user) {
             return response()->json([
@@ -331,7 +331,7 @@ class MonUtilisateurController extends Controller
         $validator = Validator::make($request->all(), [
             'nom' => 'required|string|max:50',
             'prenom' => 'required|string|max:50',
-            'email' => 'required|email|unique:monutilisateurs,email,' . $id,
+            'email' => 'required|email|unique:MonUtilisateurs,email,' . $id,
             'password' => 'nullable|string|min:6',
             'statut' => 'required|in:active,inactive,bloqué',
             'role_ids' => 'array',
@@ -377,7 +377,7 @@ class MonUtilisateurController extends Controller
             
             $user->load(['roles', 'departements']);
 
-            LogHelper::update('monutilisateurs', $user->id, 'Modification de l\'utilisateur : ' . $user->nom . ' ' . $user->prenom);
+            LogHelper::update('MonUtilisateurs', $user->id, 'Modification de l\'utilisateur : ' . $user->nom . ' ' . $user->prenom);
             
             return response()->json([
                 'success' => true,
@@ -397,7 +397,7 @@ class MonUtilisateurController extends Controller
      // Supprimer un utilisateur
     public function destroy($id)
     {
-        $user = Monutilisateur::find($id);
+        $user = MonUtilisateur::find($id);
         
         if (!$user) {
             return response()->json([
@@ -427,7 +427,7 @@ class MonUtilisateurController extends Controller
             
             DB::commit();
 
-            LogHelper::delete('monutilisateurs', $id, 'Suppression de l\'utilisateur : ' . $userName);
+            LogHelper::delete('MonUtilisateurs', $id, 'Suppression de l\'utilisateur : ' . $userName);
             
             return response()->json([
                 'success' => true,
@@ -447,7 +447,7 @@ class MonUtilisateurController extends Controller
  // Assigner des rôles à un utilisateur
     public function assignRoles(Request $request, $id)
     {
-        $user = Monutilisateur::find($id);
+        $user = MonUtilisateur::find($id);
         
         if (!$user) {
             return response()->json([
@@ -483,7 +483,7 @@ class MonUtilisateurController extends Controller
   // Retirer un rôle d'un utilisateur
     public function removeRole($userId, $roleId)
     {
-        $user = Monutilisateur::find($userId);
+        $user = MonUtilisateur::find($userId);
         
         if (!$user) {
             return response()->json([
@@ -532,7 +532,7 @@ class MonUtilisateurController extends Controller
        // Assigner des directions à un utilisateur
     public function assignDirections(Request $request, $id)
     {
-        $user = Monutilisateur::find($id);
+        $user = MonUtilisateur::find($id);
         
         if (!$user) {
             return response()->json([
@@ -568,7 +568,7 @@ class MonUtilisateurController extends Controller
     // Retirer une direction d'un utilisateur
     public function removeDirection($userId, $directionId)
     {
-        $user = Monutilisateur::find($userId);
+        $user = MonUtilisateur::find($userId);
         
         if (!$user) {
             return response()->json([
@@ -606,7 +606,7 @@ class MonUtilisateurController extends Controller
      // Obtenir les détails complets d'un utilisateur
     public function getWithDetails($id)
     {
-        $user = Monutilisateur::with(['roles.permissions', 'departements'])->find($id);
+        $user = MonUtilisateur::with(['roles.permissions', 'departements'])->find($id);
         
         if (!$user) {
             return response()->json([
@@ -633,10 +633,10 @@ class MonUtilisateurController extends Controller
 
    public function stats()
     {
-        $total = Monutilisateur::count();
-        $active = Monutilisateur::where('statut', 'active')->count();
-        $inactive = Monutilisateur::where('statut', 'inactive')->count();
-        $blocked = Monutilisateur::where('statut', 'bloqué')->count();
+        $total = MonUtilisateur::count();
+        $active = MonUtilisateur::where('statut', 'active')->count();
+        $inactive = MonUtilisateur::where('statut', 'inactive')->count();
+        $blocked = MonUtilisateur::where('statut', 'bloqué')->count();
         
         return response()->json([
             'success' => true,
@@ -667,7 +667,7 @@ class MonUtilisateurController extends Controller
             ->groupBy('departements.id', 'departements.sigle')
             ->get();
         
-        $recentUsers = Monutilisateur::with(['roles', 'departements'])
+        $recentUsers = MonUtilisateur::with(['roles', 'departements'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
@@ -693,7 +693,7 @@ class MonUtilisateurController extends Controller
     // Utilisateurs récents
     public function recentUsers()
     {
-        $users = Monutilisateur::with(['roles', 'departements'])
+        $users = MonUtilisateur::with(['roles', 'departements'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();

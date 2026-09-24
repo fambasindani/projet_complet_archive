@@ -1,10 +1,10 @@
 // @ts-nocheck
 // src/services/scannerService.js
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, SCANNER_URL } from "../config";
 
 class ScannerService {
     constructor() {
-        this.baseUrl = 'http://localhost:8081';
+        this.baseUrl = SCANNER_URL;
         this.isConnected = false;
         console.log("🔧 ScannerService initialisé avec URL:", this.baseUrl);
     }
@@ -52,8 +52,8 @@ class ScannerService {
     }
 
     // Définir les informations du document
-    async setDocumentInfo(documentId, classeurId, token, nomFichier) {
-        console.log("📤 Envoi infos document au scanner:", { documentId, classeurId, nomFichier });
+    async setDocumentInfo(documentId, classeurId, token, nomFichier, uploadType = 'document', idMinistere = 0) {
+        console.log("📤 Envoi infos document au scanner:", { documentId, classeurId, nomFichier, uploadType, idMinistere });
         try {
             const response = await fetch(`${this.baseUrl}/api/setinfo`, {
                 method: 'POST',
@@ -65,7 +65,9 @@ class ScannerService {
                     documentId: parseInt(documentId),
                     classeurId: parseInt(classeurId),
                     token: token,
-                    nom_fichier: nomFichier 
+                    nom_fichier: nomFichier,
+                    upload_type: uploadType,
+                    id_ministere: idMinistere ? parseInt(idMinistere) : 0
                 })
             });
             
@@ -158,9 +160,9 @@ class ScannerService {
     // Scanner et uploader
     async scanAndUpload(config) {
         console.log("🔄 scanAndUpload démarré:", config);
-        const { apiUrl, token, idDeclaration, idClasseur, nom_fichier } = config;
+        const { apiUrl, token, idDeclaration, idClasseur, nom_fichier, uploadType, idMinistere } = config;
 
-        const infoResult = await this.setDocumentInfo(idDeclaration, idClasseur, token, nom_fichier);
+        const infoResult = await this.setDocumentInfo(idDeclaration, idClasseur, token, nom_fichier, uploadType, idMinistere);
         console.log("📋 setDocumentInfo:", infoResult);
 
         if (apiUrl) {
@@ -168,8 +170,14 @@ class ScannerService {
             console.log("🔗 setApiUrl:", apiUrl);
         }
 
-        const scanResult = await this.startScan();
+        let scanResult = await this.startScan();
         console.log("🚀 startScan:", scanResult);
+        if (scanResult.success === false) {
+            // Le scanner peut etre en veille au 1er appel : on retente une fois.
+            await new Promise(r => setTimeout(r, 2500));
+            scanResult = await this.startScan();
+            console.log("🚀 startScan (retry):", scanResult);
+        }
         if (scanResult.success === false && scanResult.message) {
             return { success: false, message: scanResult.message };
         }
@@ -192,8 +200,8 @@ class ScannerService {
                 if (status.scanning === true) {
                     scanningDetected = true;
                 }
-                if (i > 5 && !scanningDetected) {
-                    return { success: true, files: [], message: "Scan envoyé au scanner" };
+                if (i > 40 && !scanningDetected) {
+                    return { success: false, message: "Le scanner n'a pas démarré. Vérifiez qu'il est branché et allumé." };
                 }
             }
         }

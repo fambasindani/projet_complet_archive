@@ -135,7 +135,7 @@ const Roles = () => {
 ;
 
   const getPermissionCount = (role) => role.permissions?.length || role.permissions_count || 0;
-  const getUserCount = (role) => role.monutilisateurs_count || role.users_count || 0;
+  const getUserCount = (role) => role.users_count || 0;
   const getPermissionNames = (role) => {
     if (!role.permissions || !Array.isArray(role.permissions)) return [];
     return role.permissions.slice(0, 3).map((perm) => perm.code || 'Permission');

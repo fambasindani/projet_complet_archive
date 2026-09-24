@@ -21,10 +21,11 @@ class MonUser extends Authenticatable
 
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'user_roles');
+        return $this->belongsToMany(Role::class, 'user_role', 'user_id', 'role_id');
     }
 
     // Relations Droit/Groupe désactivées - tables inexistantes
     // public function droits() { return $this->belongsToMany(Droit::class, 'user_droits'); }
     // public function groupes() { return $this->belongsToMany(Groupe::class, 'user_groupes'); }
 }
+

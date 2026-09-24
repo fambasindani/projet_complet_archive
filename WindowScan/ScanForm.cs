@@ -1,10 +1,12 @@
-Ôªøusing System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Net.Http;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using iTextSharp.text;
@@ -23,6 +25,8 @@ namespace WindowScan
         private int? idDeclaration = null;
         private int? idClasseur = null;
         private string nom_fichier = null;
+        private string uploadType = "document";
+        private int idMinistere = 0;
         private readonly string tempFolder = Path.Combine(Path.GetTempPath(), "WiaScans");
         private readonly string configFile = Path.Combine(Application.StartupPath, "scanner_config.json");
 
@@ -30,7 +34,7 @@ namespace WindowScan
         public Action<string, bool> OnScanComplete;
         private bool isScanning = false;
 
-        // D√©claration des contr√¥les
+        // DÈclaration des contrÙles
         private TextBox txtApiUrl;
         private TextBox txtToken;
         private TextBox txtIdDeclaration;
@@ -121,7 +125,7 @@ namespace WindowScan
             this.btnStartScan.Name = "btnStartScan";
             this.btnStartScan.Size = new System.Drawing.Size(662, 30);
             this.btnStartScan.TabIndex = 9;
-            this.btnStartScan.Text = "D√âMARRER LE SCAN ET UPLOAD";
+            this.btnStartScan.Text = "D…MARRER LE SCAN ET UPLOAD";
             this.btnStartScan.UseVisualStyleBackColor = false;
 
             // lblApiUrl
@@ -146,7 +150,7 @@ namespace WindowScan
             this.lblIdDeclaration.Name = "lblIdDeclaration";
             this.lblIdDeclaration.Size = new System.Drawing.Size(95, 16);
             this.lblIdDeclaration.TabIndex = 4;
-            this.lblIdDeclaration.Text = "ID D√©claration:";
+            this.lblIdDeclaration.Text = "ID DÈclaration:";
             this.lblIdDeclaration.Visible = false;
 
             // lblIdClasseur
@@ -183,13 +187,13 @@ namespace WindowScan
 
         private void CheckControlsInitialization()
         {
-            if (txtLogs == null) throw new Exception("txtLogs non initialis√©");
-            if (txtApiUrl == null) throw new Exception("txtApiUrl non initialis√©");
-            if (txtToken == null) throw new Exception("txtToken non initialis√©");
-            if (txtIdDeclaration == null) throw new Exception("txtIdDeclaration non initialis√©");
-            if (txtIdClasseur == null) throw new Exception("txtIdClasseur non initialis√©");
-            if (btnSaveConfig == null) throw new Exception("btnSaveConfig non initialis√©");
-            if (btnStartScan == null) throw new Exception("btnStartScan non initialis√©");
+            if (txtLogs == null) throw new Exception("txtLogs non initialisÈ");
+            if (txtApiUrl == null) throw new Exception("txtApiUrl non initialisÈ");
+            if (txtToken == null) throw new Exception("txtToken non initialisÈ");
+            if (txtIdDeclaration == null) throw new Exception("txtIdDeclaration non initialisÈ");
+            if (txtIdClasseur == null) throw new Exception("txtIdClasseur non initialisÈ");
+            if (btnSaveConfig == null) throw new Exception("btnSaveConfig non initialisÈ");
+            if (btnStartScan == null) throw new Exception("btnStartScan non initialisÈ");
         }
 
         private void InitializeForm()
@@ -201,15 +205,15 @@ namespace WindowScan
             this.Load += ScanForm_Load;
             this.FormClosing += ScanForm_FormClosing;
 
-            SafeLog("üöÄ Application scanner Windows d√©marr√©e");
-            SafeLog($"üìÅ Dossier temporaire: {tempFolder}");
-            SafeLog("üìù Pr√™t √† recevoir les commandes...");
+            SafeLog("?? Application scanner Windows dÈmarrÈe");
+            SafeLog($"?? Dossier temporaire: {tempFolder}");
+            SafeLog("?? PrÍt ‡ recevoir les commandes...");
         }
 
         private void ScanForm_Load(object sender, EventArgs e)
         {
-            SafeLog("‚úÖ Interface utilisateur charg√©e");
-            SafeLog("üîß Initialisation compl√®te termin√©e");
+            SafeLog("? Interface utilisateur chargÈe");
+            SafeLog("?? Initialisation complËte terminÈe");
         }
 
         private void ScanForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -228,12 +232,12 @@ namespace WindowScan
                 }
                 else
                 {
-                    SafeLog("üõë Application ferm√©e par l'utilisateur");
+                    SafeLog("?? Application fermÈe par l'utilisateur");
                 }
             }
             else
             {
-                SafeLog("üëã Application ferm√©e");
+                SafeLog("?? Application fermÈe");
             }
         }
 
@@ -257,7 +261,7 @@ namespace WindowScan
             catch (Exception ex)
             {
                 Console.WriteLine($"Erreur log: {ex.Message}");
-                Console.WriteLine($"Message √† logger: {message}");
+                Console.WriteLine($"Message ‡ logger: {message}");
             }
         }
 
@@ -290,17 +294,17 @@ namespace WindowScan
                         }
 
                         UpdateApiConfiguration();
-                        SafeLog("‚úÖ Configuration charg√©e depuis le fichier");
+                        SafeLog("? Configuration chargÈe depuis le fichier");
                     }
                 }
                 else
                 {
-                    SafeLog("‚ÑπÔ∏è Aucun fichier de configuration trouv√©, utilisation des valeurs par d√©faut");
+                    SafeLog("?? Aucun fichier de configuration trouvÈ, utilisation des valeurs par dÈfaut");
                 }
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ö†Ô∏è Erreur chargement configuration: {ex.Message}");
+                SafeLog($"?? Erreur chargement configuration: {ex.Message}");
             }
         }
 
@@ -334,12 +338,12 @@ namespace WindowScan
                 string json = JsonConvert.SerializeObject(config, Formatting.Indented);
                 File.WriteAllText(configFile, json);
 
-                SafeLog("‚úÖ Configuration sauvegard√©e avec succ√®s");
-                MessageBox.Show("Configuration sauvegard√©e !", "Succ√®s", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SafeLog("? Configuration sauvegardÈe avec succËs");
+                MessageBox.Show("Configuration sauvegardÈe !", "SuccËs", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ùå Erreur sauvegarde configuration: {ex.Message}");
+                SafeLog($"? Erreur sauvegarde configuration: {ex.Message}");
                 MessageBox.Show($"Erreur: {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -351,19 +355,14 @@ namespace WindowScan
                 laravelApiBase = txtApiUrl.Text.Trim();
 
                 string normalizedUrl = laravelApiBase.TrimEnd('/');
-
-                if (normalizedUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+                if (!normalizedUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
                 {
-                    laravelApiUrl = $"{normalizedUrl}/documents-declaration/upload-multiple";
+                    normalizedUrl = normalizedUrl + "/api";
                 }
-                else
-                {
-                    if (normalizedUrl.EndsWith("/api"))
-                    {
-                        normalizedUrl = normalizedUrl.Substring(0, normalizedUrl.Length - 4);
-                    }
-                    laravelApiUrl = $"{normalizedUrl}/api/documents-declaration/upload-multiple";
-                }
+                string endpointPath = uploadType == "note"
+                    ? "/notes/upload-raw"
+                    : "/documents-declaration/upload-raw";
+                laravelApiUrl = normalizedUrl + endpointPath;
 
                 token = txtToken.Text;
 
@@ -377,11 +376,11 @@ namespace WindowScan
                 else
                     idClasseur = null;
 
-                SafeLog($"üîÑ Configuration mise √† jour - URL compl√®te: {laravelApiUrl}");
+                SafeLog($"?? Configuration mise ‡ jour - URL complËte: {laravelApiUrl}");
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ö†Ô∏è Erreur mise √† jour configuration: {ex.Message}");
+                SafeLog($"?? Erreur mise ‡ jour configuration: {ex.Message}");
             }
         }
 
@@ -389,32 +388,32 @@ namespace WindowScan
         {
             if (isScanning)
             {
-                SafeLog("‚ö†Ô∏è Un scan est d√©j√† en cours");
+                SafeLog("?? Un scan est dÈj‡ en cours");
                 return;
             }
 
             if (string.IsNullOrEmpty(token))
             {
-                SafeLog("‚ùå Token d'authentification manquant");
+                SafeLog("? Token d'authentification manquant");
                 OnScanComplete?.Invoke(null, false);
                 return;
             }
 
             if (!idDeclaration.HasValue)
             {
-                SafeLog("‚ùå ID de d√©claration manquant");
+                SafeLog("? ID de dÈclaration manquant");
                 OnScanComplete?.Invoke(null, false);
                 return;
             }
 
             if (!idClasseur.HasValue)
             {
-                SafeLog("‚ùå ID du classeur manquant");
+                SafeLog("? ID du classeur manquant");
                 OnScanComplete?.Invoke(null, false);
                 return;
             }
 
-            SafeLog($"üöÄ D√©marrage scan pour d√©claration #{idDeclaration}, classeur #{idClasseur}");
+            SafeLog($"?? DÈmarrage scan pour dÈclaration #{idDeclaration}, classeur #{idClasseur}");
 
             Thread scanThread = new Thread(new ThreadStart(ScanAndUpload));
             scanThread.SetApartmentState(ApartmentState.STA);
@@ -437,20 +436,34 @@ namespace WindowScan
                 var deviceManager = new DeviceManager();
                 Device scanner = null;
 
-                SafeLog("üîç Recherche du scanner...");
+                SafeLog("?? Recherche du scanner...");
                 for (int i = 1; i <= deviceManager.DeviceInfos.Count; i++)
                 {
-                    if (deviceManager.DeviceInfos[i].Type == WiaDeviceType.ScannerDeviceType)
+                    var info = deviceManager.DeviceInfos[i];
+                    string devName = "";
+                    try { devName = info.Properties["Name"].get_Value()?.ToString() ?? ""; } catch { }
+
+                    bool isScannerType = info.Type == WiaDeviceType.ScannerDeviceType;
+                    bool looksLikeScanner =
+                        devName.IndexOf("scan", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        devName.IndexOf("laserjet", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        devName.IndexOf("mfp", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    SafeLog($"   ï PÈriphÈrique WIA [{i}] Type={info.Type} Nom='{devName}'");
+
+                    // Accepte le type Scanner classique ET les pilotes eSCL/USB
+                    // (HP rÈcents) qui remontent en Type=65535 (non spÈcifiÈ).
+                    if (isScannerType || looksLikeScanner)
                     {
-                        scanner = deviceManager.DeviceInfos[i].Connect();
-                        SafeLog($"‚úÖ Scanner trouv√©: {deviceManager.DeviceInfos[i].Properties["Name"].get_Value()}");
+                        scanner = info.Connect();
+                        SafeLog($"? Scanner trouvÈ: {devName}");
                         break;
                     }
                 }
 
                 if (scanner == null)
                 {
-                    SafeLog("‚ùå Aucun scanner d√©tect√© !");
+                    SafeLog("? Aucun scanner dÈtectÈ !");
                     OnScanComplete?.Invoke(null, false);
                     isScanning = false;
                     return;
@@ -458,39 +471,120 @@ namespace WindowScan
 
                 int page = 1;
                 bool hasMorePages = true;
+                string lastSignature = null;
 
                 while (hasMorePages && isScanning)
                 {
                     try
                     {
-                        var item = scanner.Items[1];
+                        ImageFile image = null;
+                        Exception transferError = null;
+                        var transferDone = new ManualResetEvent(false);
+                        bool feederEmpty = false;
+                        string fileName = $"page_{page}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
+                        string path = Path.Combine(tempFolder, fileName);
 
-                        SetWiaProperty(item.Properties, "Document Handling Select", 1);
-                        SetWiaProperty(item.Properties, "Pages", 1);
-
-                        var dialog = new WIA.CommonDialog();
-                        ImageFile image = (ImageFile)dialog.ShowTransfer(
-                            item,
-                            "{B96B3CA1-0728-11D3-9D7B-0000F81EF32E}",
-                            false
-                        );
-
-                        if (image != null)
+                        var transferThread = new Thread(() =>
                         {
-                            Directory.CreateDirectory(tempFolder);
-                            string fileName = $"page_{page}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
-                            string path = Path.Combine(tempFolder, fileName);
+                            try
+                            {
+                                // Connexion WIA creee DANS ce thread (evite l'erreur RCW)
+                                var dm = new DeviceManager();
+                                Device dev = null;
+                                for (int i = 1; i <= dm.DeviceInfos.Count; i++)
+                                {
+                                    var info = dm.DeviceInfos[i];
+                                    string nm = "";
+                                    try { nm = info.Properties["Name"].get_Value()?.ToString() ?? ""; } catch { }
+                                    if (info.Type == WiaDeviceType.ScannerDeviceType ||
+                                        nm.IndexOf("scan", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                        nm.IndexOf("laserjet", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                        nm.IndexOf("mfp", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        dev = info.Connect();
+                                        break;
+                                    }
+                                }
+                                if (dev == null) throw new Exception("Scanner non disponible");
 
-                            if (File.Exists(path)) File.Delete(path);
-                            image.SaveFile(path);
+                                // Fin du chargeur ? (propriete DEVICE) - evite de scanner sans fin
+                                if (page > 1)
+                                {
+                                    var hs = GetWiaProperty(dev.Properties, "Document Handling Status");
+                                    if (hs == null) hs = GetWiaPropertyById(dev.Properties, 3087);
+                                    int hv = 0;
+                                    if (hs != null) int.TryParse(hs.ToString(), out hv);
+                                    SafeLog("   - Status chargeur = " + (hs == null ? "null" : hs.ToString()));
+                                    if (hs != null && (hv & 1) == 1) { feederEmpty = true; return; }
+                                }
+
+                                var item = dev.Items[1];
+                                SetWiaProperty(item.Properties, "Document Handling Select", 1);
+                                SetWiaProperty(item.Properties, "Pages", 1);
+                                SetWiaProperty(item.Properties, "X Resolution", 200);
+                                SetWiaProperty(item.Properties, "Y Resolution", 200);
+                                SetWiaProperty(item.Properties, "Horizontal Resolution", 200);
+                                SetWiaProperty(item.Properties, "Vertical Resolution", 200);
+
+                                var dialog = new WIA.CommonDialog();
+                                image = (ImageFile)dialog.ShowTransfer(
+                                    item, "{B96B3CA1-0728-11D3-9D7B-0000F81EF32E}", false);
+
+                                if (image != null)
+                                {
+                                    Directory.CreateDirectory(tempFolder);
+                                    if (File.Exists(path)) File.Delete(path);
+                                    image.SaveFile(path);
+                                }
+                            }
+                            catch (Exception tex) { transferError = tex; }
+                            finally { transferDone.Set(); }
+                        });
+                        transferThread.SetApartmentState(ApartmentState.STA);
+                        transferThread.IsBackground = true;
+                        transferThread.Start();
+
+                        // Attente max : 60s pour la 1re page, 12s ensuite
+                        int waitMs = page == 1 ? 60000 : 12000;
+                        if (!transferDone.WaitOne(waitMs))
+                        {
+                            SafeLog("Fin du chargeur (aucune page supplementaire).");
+                            hasMorePages = false;
+                            break;
+                        }
+
+                        if (transferError != null)
+                        {
+                            hasMorePages = false;
+                            SafeLog("Fin/erreur chargeur: " + transferError.Message);
+                            break;
+                        }
+
+                        if (feederEmpty)
+                        {
+                            hasMorePages = false;
+                            SafeLog("Chargeur vide, arret du scan.");
+                            break;
+                        }
+
+                        if (image != null && File.Exists(path))
+                        {
+                            string sig = ComputeSignature(path);
+                            if (page > 1 && lastSignature != null && sig != null && sig == lastSignature)
+                            {
+                                try { File.Delete(path); } catch { }
+                                hasMorePages = false;
+                                SafeLog("Page identique a la precedente -> fin du chargeur.");
+                                break;
+                            }
+                            lastSignature = sig;
                             scannedImages.Add(path);
-
-                            SafeLog($"üìÑ Page {page} scann√©e: {fileName}");
+                            SafeLog($"?? Page {page} scannÈe: {fileName}");
                         }
                         else
                         {
                             hasMorePages = false;
-                            SafeLog("üì≠ Aucun document d√©tect√© dans le chargeur");
+                            SafeLog("Aucun document detecte dans le chargeur");
                         }
                     }
                     catch (Exception ex)
@@ -498,20 +592,87 @@ namespace WindowScan
                         if (ex.Message.Contains("There are no more pages"))
                         {
                             hasMorePages = false;
-                            SafeLog("‚úÖ Fin des documents dans le chargeur");
+                            SafeLog("? Fin des documents dans le chargeur");
                         }
                         else
                         {
                             hasMorePages = false;
-                            SafeLog($"‚ùå Erreur scan: {ex.Message}");
+                            SafeLog($"? Erreur scan: {ex.Message}");
                         }
                     }
 
                     page++;
+                    if (page > 30) { SafeLog("Limite de 30 pages atteinte, arret."); hasMorePages = false; }
                     Thread.Sleep(800);
                 }
 
-                SafeLog($"üìä Total: {scannedImages.Count} page(s) scann√©e(s)");
+                // Si rien dans le chargeur, tenter la vitre (flatbed)
+                if (scannedImages.Count == 0 && isScanning)
+                {
+                    SafeLog("Aucune page dans le chargeur, tentative sur la vitre...");
+                    ImageFile flatImage = null;
+                    Exception flatError = null;
+                    var flatDone = new ManualResetEvent(false);
+                    string flatName = "flat_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".jpg";
+                    string flatPath = Path.Combine(tempFolder, flatName);
+
+                    var flatThread = new Thread(() =>
+                    {
+                        try
+                        {
+                            var dm = new DeviceManager();
+                            Device dev = null;
+                            for (int i = 1; i <= dm.DeviceInfos.Count; i++)
+                            {
+                                var info = dm.DeviceInfos[i];
+                                string nm = "";
+                                try { nm = info.Properties["Name"].get_Value()?.ToString() ?? ""; } catch { }
+                                if (info.Type == WiaDeviceType.ScannerDeviceType ||
+                                    nm.IndexOf("scan", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    nm.IndexOf("laserjet", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    nm.IndexOf("mfp", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    dev = info.Connect();
+                                    break;
+                                }
+                            }
+                            if (dev == null) throw new Exception("Scanner non disponible");
+
+                            var flatItem = dev.Items[1];
+                            SetWiaProperty(flatItem.Properties, "Document Handling Select", 2);
+                            var flatDialog = new WIA.CommonDialog();
+                            flatImage = (ImageFile)flatDialog.ShowTransfer(
+                                flatItem, "{B96B3CA1-0728-11D3-9D7B-0000F81EF32E}", false);
+                            if (flatImage != null)
+                            {
+                                Directory.CreateDirectory(tempFolder);
+                                if (File.Exists(flatPath)) File.Delete(flatPath);
+                                flatImage.SaveFile(flatPath);
+                            }
+                        }
+                        catch (Exception ex) { flatError = ex; }
+                        finally { flatDone.Set(); }
+                    });
+                    flatThread.SetApartmentState(ApartmentState.STA);
+                    flatThread.IsBackground = true;
+                    flatThread.Start();
+
+                    if (flatDone.WaitOne(60000) && flatError == null && flatImage != null && File.Exists(flatPath))
+                    {
+                        scannedImages.Add(flatPath);
+                        SafeLog("Page (vitre) scannee: " + flatName);
+                    }
+                    else if (flatError != null)
+                    {
+                        SafeLog("Erreur scan vitre: " + flatError.Message);
+                    }
+                    else
+                    {
+                        SafeLog("Aucun document detecte sur la vitre");
+                    }
+                }
+
+                SafeLog($"?? Total: {scannedImages.Count} page(s) scannÈe(s)");
 
                 if (scannedImages.Count > 0 && isScanning)
                 {
@@ -521,12 +682,12 @@ namespace WindowScan
                         bool uploadSuccess = UploadToLaravel(pdfPath);
                         if (uploadSuccess)
                         {
-                            SafeLog("üéâ PDF upload√© avec succ√®s vers Laravel !");
+                            SafeLog("?? PDF uploadÈ avec succËs vers Laravel !");
                             OnScanComplete?.Invoke(pdfPath, true);
                         }
                         else
                         {
-                            SafeLog("‚ùå √âchec de l'upload vers Laravel");
+                            SafeLog("? …chec de l'upload vers Laravel");
                             OnScanComplete?.Invoke(pdfPath, false);
                         }
 
@@ -540,7 +701,7 @@ namespace WindowScan
             }
             catch (Exception ex)
             {
-                SafeLog($"üí• Erreur critique: {ex.Message}");
+                SafeLog($"?? Erreur critique: {ex.Message}");
                 OnScanComplete?.Invoke(null, false);
             }
             finally
@@ -555,45 +716,55 @@ namespace WindowScan
             {
                 if (!File.Exists(pdfPath))
                 {
-                    SafeLog("‚ùå Fichier PDF introuvable");
+                    SafeLog("? Fichier PDF introuvable");
                     return false;
                 }
 
                 FileInfo fileInfo = new FileInfo(pdfPath);
-                SafeLog($"üì§ Envoi vers Laravel: {fileInfo.Name} ({fileInfo.Length / 1024} KB)");
+                SafeLog($"?? Envoi vers Laravel: {fileInfo.Name} ({fileInfo.Length / 1024} KB)");
 
-                using (var client = new HttpClient())
-                using (var formData = new MultipartFormDataContent())
-                {
-                    byte[] fileBytes = File.ReadAllBytes(pdfPath);
-                    var fileContent = new ByteArrayContent(fileBytes);
-                    fileContent.Headers.ContentType =
-                        System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/pdf");
+                byte[] fileBytes = File.ReadAllBytes(pdfPath);
+                    string uploadName = ToAscii(Path.GetFileNameWithoutExtension(pdfPath)) + ".pdf";
 
-                    formData.Add(fileContent, "files[]", Path.GetFileName(pdfPath));
-                    formData.Add(new StringContent(idDeclaration.Value.ToString()), "id_declaration");
-                    formData.Add(new StringContent(idClasseur.Value.ToString()), "id_classeur");
-                    formData.Add(new StringContent(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")), "scan_date");
+                    string postUrl = laravelApiUrl;
+                    if (uploadType == "note")
+                    {
+                        postUrl += "?id_note_perception=" + idDeclaration.Value
+                                 + "&id_classeur=" + idClasseur.Value
+                                 + "&id_ministere=" + idMinistere
+                                 + "&nom_fichier=" + Uri.EscapeDataString(uploadName);
+                    }
+                    else
+                    {
+                        postUrl += "?id_declaration=" + idDeclaration.Value
+                                 + "&id_classeur=" + idClasseur.Value
+                                 + "&nom_fichier=" + Uri.EscapeDataString(uploadName);
+                    }
 
-                    client.DefaultRequestHeaders.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    using (var client = new HttpClient())
+                    {
+                        var fileContent = new ByteArrayContent(fileBytes);
+                        fileContent.Headers.ContentType =
+                            System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/pdf");
 
-                    client.Timeout = TimeSpan.FromMinutes(5);
+                        client.DefaultRequestHeaders.Authorization =
+                            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                        client.Timeout = TimeSpan.FromMinutes(5);
 
-                    SafeLog($"üåê Envoi POST √†: {laravelApiUrl}");
-                    var response = client.PostAsync(laravelApiUrl, formData).Result;
+                        SafeLog("Envoi POST (raw) a: " + postUrl);
+                        var response = client.PostAsync(postUrl, fileContent).Result;
 
                     if (response.IsSuccessStatusCode)
                     {
                         var responseContent = response.Content.ReadAsStringAsync().Result;
-                        SafeLog($"‚úÖ R√©ponse API: {responseContent}");
+                        SafeLog($"? RÈponse API: {responseContent}");
 
                         try
                         {
                             var result = JsonConvert.DeserializeObject<dynamic>(responseContent);
                             if (result.message != null)
                             {
-                                SafeLog($"üìù Message: {result.message}");
+                                SafeLog($"?? Message: {result.message}");
                             }
                             return true;
                         }
@@ -605,11 +776,11 @@ namespace WindowScan
                     else
                     {
                         var errorContent = response.Content.ReadAsStringAsync().Result;
-                        SafeLog($"‚ùå Erreur HTTP {response.StatusCode}: {errorContent}");
+                        SafeLog($"? Erreur HTTP {response.StatusCode}: {errorContent}");
 
                         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                         {
-                            MessageBox.Show("Token d'authentification invalide ou expir√©", "Erreur d'authentification",
+                            MessageBox.Show("Token d'authentification invalide ou expirÈ", "Erreur d'authentification",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
 
@@ -619,13 +790,13 @@ namespace WindowScan
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ùå Erreur upload: {ex.Message}");
+                SafeLog($"? Erreur upload: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Cr√©e un PDF √† partir des images scann√©es avec suppression agressive des bords noirs
+        /// CrÈe un PDF ‡ partir des images scannÈes avec suppression agressive des bords noirs
         /// </summary>
         private string CreatePdf()
         {
@@ -638,7 +809,7 @@ namespace WindowScan
                 string outputFileName = $"{safeFileName}_{idDeclaration}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
                 string outputPath = Path.Combine(tempFolder, outputFileName);
 
-                SafeLog($"üìÑ Cr√©ation du PDF: {outputFileName}");
+                SafeLog($"?? CrÈation du PDF: {outputFileName}");
 
                 using (var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
@@ -653,19 +824,19 @@ namespace WindowScan
 
                         if (File.Exists(imgPath))
                         {
-                            SafeLog($"   üì∏ Traitement image {i + 1}/{scannedImages.Count}: {Path.GetFileName(imgPath)}");
+                            SafeLog($"   ?? Traitement image {i + 1}/{scannedImages.Count}: {Path.GetFileName(imgPath)}");
 
-                            // Supprimer COMPL√àTEMENT tous les bords noirs
+                            // Supprimer COMPL»TEMENT tous les bords noirs
                             string processedImagePath = RemoveAllBlackBorders(imgPath);
 
                             try
                             {
                                 var img = iTextSharp.text.Image.GetInstance(processedImagePath);
 
-                                // FORCER l'image √† remplir exactement toute la page A4
+                                // FORCER l'image ‡ remplir exactement toute la page A4
                                 img.ScaleAbsolute(pdfDoc.PageSize.Width, pdfDoc.PageSize.Height);
 
-                                // Positionner √† (0,0) pour coller aux bords
+                                // Positionner ‡ (0,0) pour coller aux bords
                                 img.SetAbsolutePosition(0, 0);
 
                                 pdfDoc.Add(img);
@@ -686,34 +857,34 @@ namespace WindowScan
                     }
 
                     pdfDoc.Close();
-                    SafeLog($"‚úÖ PDF cr√©√© avec succ√®s: {outputFileName}");
+                    SafeLog($"? PDF crÈÈ avec succËs: {outputFileName}");
                 }
 
                 return outputPath;
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ùå Erreur cr√©ation PDF: {ex.Message}");
+                SafeLog($"? Erreur crÈation PDF: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
-        /// Supprime TOUS les bords noirs de l'image de mani√®re agressive
+        /// Supprime TOUS les bords noirs de l'image de maniËre agressive
         /// </summary>
         private string RemoveAllBlackBorders(string originalImagePath)
         {
             try
             {
-                string tempFile = Path.Combine(tempFolder, $"cropped_aggressive_{Guid.NewGuid():N}.png");
+                string tempFile = Path.Combine(tempFolder, $"cropped_{Guid.NewGuid():N}.jpg");
 
                 using (var bitmap = new Bitmap(originalImagePath))
                 {
-                    // Supprimer les bords noirs de fa√ßon agressive
+                    // Supprimer les bords noirs de faÁon agressive
                     using (var croppedBitmap = AggressiveAutoCrop(bitmap))
                     {
                         // Sauvegarder au format PNG sans perte
-                        croppedBitmap.Save(tempFile, ImageFormat.Png);
+                        SaveCompressed(croppedBitmap, tempFile);
                     }
                 }
 
@@ -721,31 +892,31 @@ namespace WindowScan
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ö†Ô∏è Erreur suppression agressive: {ex.Message}");
+                SafeLog($"?? Erreur suppression agressive: {ex.Message}");
                 return originalImagePath;
             }
         }
 
         /// <summary>
-        /// Rogne l'image de fa√ßon agressive pour enlever TOUT le noir autour
+        /// Rogne l'image de faÁon agressive pour enlever TOUT le noir autour
         /// </summary>
         private Bitmap AggressiveAutoCrop(Bitmap original)
         {
             try
             {
-                // Seuil tr√®s bas pour d√©tecter m√™me les pixels l√©g√®rement gris
+                // Seuil trËs bas pour dÈtecter mÍme les pixels lÈgËrement gris
                 int threshold = 10; // Presque noir uniquement
 
-                System.Drawing.Rectangle cropRect = FindExactContentRectangle(original, threshold);
+                System.Drawing.Rectangle cropRect = FindExactContentRectangleFast(original, threshold);
 
-                // V√©rifier que le rectangle est valide
+                // VÈrifier que le rectangle est valide
                 if (cropRect.Width <= 0 || cropRect.Height <= 0 ||
                     cropRect.Width > original.Width || cropRect.Height > original.Height)
                 {
                     return new Bitmap(original);
                 }
 
-                SafeLog($"   üìê Rectangle de contenu: X={cropRect.X}, Y={cropRect.Y}, Largeur={cropRect.Width}, Hauteur={cropRect.Height}");
+                SafeLog($"   ?? Rectangle de contenu: X={cropRect.X}, Y={cropRect.Y}, Largeur={cropRect.Width}, Hauteur={cropRect.Height}");
 
                 // PAS de marge - on veut exactement le contenu
                 var cropped = new Bitmap(cropRect.Width, cropRect.Height);
@@ -763,12 +934,12 @@ namespace WindowScan
                         GraphicsUnit.Pixel);
                 }
 
-                SafeLog($"‚úÖ Cadre noir supprim√©: nouvelle taille {cropRect.Width}x{cropRect.Height}");
+                SafeLog($"? Cadre noir supprimÈ: nouvelle taille {cropRect.Width}x{cropRect.Height}");
                 return cropped;
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ö†Ô∏è Erreur auto-crop agressif: {ex.Message}");
+                SafeLog($"?? Erreur auto-crop agressif: {ex.Message}");
                 return new Bitmap(original);
             }
         }
@@ -776,6 +947,47 @@ namespace WindowScan
         /// <summary>
         /// Trouve le rectangle EXACT contenant le contenu (non noir) de l'image
         /// </summary>
+        private System.Drawing.Rectangle FindExactContentRectangleFast(Bitmap bitmap, int threshold)
+        {
+            int width = bitmap.Width;
+            int height = bitmap.Height;
+            var rect = new System.Drawing.Rectangle(0, 0, width, height);
+            var data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            try
+            {
+                int stride = data.Stride;
+                int bytes = stride * height;
+                byte[] buffer = new byte[bytes];
+                Marshal.Copy(data.Scan0, buffer, 0, bytes);
+
+                int left = width, right = 0, top = height, bottom = 0;
+                bool contentFound = false;
+                for (int y = 0; y < height; y++)
+                {
+                    int row = y * stride;
+                    for (int x = 0; x < width; x++)
+                    {
+                        int idx = row + x * 3;
+                        byte b = buffer[idx];
+                        byte g = buffer[idx + 1];
+                        byte r = buffer[idx + 2];
+                        bool isBlack = r < threshold && g < threshold && b < threshold;
+                        if (!isBlack)
+                        {
+                            contentFound = true;
+                            if (x < left) left = x;
+                            if (x > right) right = x;
+                            if (y < top) top = y;
+                            if (y > bottom) bottom = y;
+                        }
+                    }
+                }
+                if (!contentFound) return rect;
+                return new System.Drawing.Rectangle(left, top, right - left + 1, bottom - top + 1);
+            }
+            finally { bitmap.UnlockBits(data); }
+        }
+
         private System.Drawing.Rectangle FindExactContentRectangle(Bitmap bitmap, int threshold)
         {
             int left = bitmap.Width;
@@ -785,15 +997,15 @@ namespace WindowScan
 
             bool contentFound = false;
 
-            // Scanner TOUS les pixels pour √™tre pr√©cis (pas d'√©chantillonnage)
+            // Scanner TOUS les pixels pour Ítre prÈcis (pas d'Èchantillonnage)
             for (int y = 0; y < bitmap.Height; y++)
             {
                 for (int x = 0; x < bitmap.Width; x++)
                 {
                     Color pixel = bitmap.GetPixel(x, y);
 
-                    // V√©rifier si le pixel n'est PAS noir (fait partie du document)
-                    // Un pixel est consid√©r√© comme noir si toutes ses composantes sont sous le seuil
+                    // VÈrifier si le pixel n'est PAS noir (fait partie du document)
+                    // Un pixel est considÈrÈ comme noir si toutes ses composantes sont sous le seuil
                     bool isBlack = pixel.R < threshold && pixel.G < threshold && pixel.B < threshold;
 
                     if (!isBlack)
@@ -808,7 +1020,7 @@ namespace WindowScan
                 }
             }
 
-            // Si aucun contenu trouv√©, retourner l'image enti√®re
+            // Si aucun contenu trouvÈ, retourner l'image entiËre
             if (!contentFound)
             {
                 return new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height);
@@ -823,8 +1035,85 @@ namespace WindowScan
         }
 
         /// <summary>
-        /// Nettoie le nom de fichier pour √©viter les caract√®res invalides
+        /// Nettoie le nom de fichier pour Èviter les caractËres invalides
         /// </summary>
+        private string ToAscii(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return input ?? "";
+            // Decompose les accents (e -> e + accent) puis retire les accents
+            var normalized = input.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in normalized)
+            {
+                if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c)
+                    != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+            var ascii = sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+            // Retire apostrophes et guillemets (caracteres "bizarres")
+            ascii = ascii.Replace("'", "").Replace("\u2019", "").Replace("\"", "").Replace("`", "");
+            // Remplace tout autre caractere non autorise par _
+            ascii = System.Text.RegularExpressions.Regex.Replace(ascii, @"[^\w\-. ]", "_");
+            // Espaces -> _ puis fusionne les _ multiples
+            ascii = System.Text.RegularExpressions.Regex.Replace(ascii, @"\s+", "_");
+            ascii = System.Text.RegularExpressions.Regex.Replace(ascii, @"_{2,}", "_");
+            return ascii.Trim('_', '.', ' ');
+        }
+
+        private void SaveCompressed(Bitmap bitmap, string path)
+        {
+            // Reduit la resolution (max 2000 px de large) et enregistre en JPEG q72
+            // pour alleger fortement le PDF.
+            int maxWidth = 2000;
+            Bitmap final = bitmap;
+            if (bitmap.Width > maxWidth)
+            {
+                int newHeight = (int)(bitmap.Height * (maxWidth / (double)bitmap.Width));
+                final = new Bitmap(bitmap, maxWidth, newHeight);
+            }
+
+            ImageCodecInfo jpeg = null;
+            foreach (var codec in ImageCodecInfo.GetImageEncoders())
+            {
+                if (codec.FormatID == ImageFormat.Jpeg.Guid) { jpeg = codec; break; }
+            }
+
+            var encParams = new EncoderParameters(1);
+            encParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 72L);
+
+            if (jpeg != null) final.Save(path, jpeg, encParams);
+            else final.Save(path, ImageFormat.Jpeg);
+
+            if (!ReferenceEquals(final, bitmap)) final.Dispose();
+        }
+
+        private string ComputeSignature(string path)
+        {
+            // Empreinte grossiere 8x8 (niveaux de gris) pour detecter une page
+            // identique a la precedente (page fantome quand le chargeur est vide).
+            try
+            {
+                using (var bmp = new Bitmap(path))
+                using (var small = new Bitmap(bmp, new Size(8, 8)))
+                {
+                    var sb = new System.Text.StringBuilder();
+                    for (int y = 0; y < 8; y++)
+                    {
+                        for (int x = 0; x < 8; x++)
+                        {
+                            var c = small.GetPixel(x, y);
+                            int g = (c.R + c.G + c.B) / 3;
+                            sb.Append((char)('A' + (g / 16)));
+                        }
+                    }
+                    return sb.ToString();
+                }
+            }
+            catch { return null; }
+        }
+
         private string SanitizeFileName(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -864,7 +1153,7 @@ namespace WindowScan
                     }
                 }
 
-                // Nettoyer aussi les images trait√©es
+                // Nettoyer aussi les images traitÈes
                 var processedFiles = Directory.GetFiles(tempFolder, "cropped_aggressive_*.png");
                 foreach (var file in processedFiles)
                 {
@@ -872,12 +1161,38 @@ namespace WindowScan
                 }
 
                 scannedImages.Clear();
-                SafeLog("üßπ Fichiers temporaires nettoy√©s");
+                SafeLog("?? Fichiers temporaires nettoyÈs");
             }
             catch (Exception ex)
             {
-                SafeLog($"‚ö†Ô∏è Erreur nettoyage: {ex.Message}");
+                SafeLog($"?? Erreur nettoyage: {ex.Message}");
             }
+        }
+
+        private object GetWiaProperty(IProperties properties, string name)
+        {
+            try
+            {
+                foreach (Property p in properties)
+                {
+                    if (p.Name == name) return p.get_Value();
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private object GetWiaPropertyById(IProperties properties, int id)
+        {
+            try
+            {
+                foreach (Property p in properties)
+                {
+                    try { if (Convert.ToInt32(p.PropertyID) == id) return p.get_Value(); } catch { }
+                }
+            }
+            catch { }
+            return null;
         }
 
         private void SetWiaProperty(IProperties properties, object propName, object value)
@@ -900,7 +1215,7 @@ namespace WindowScan
             catch { }
         }
 
-        public void SetDocumentInfo(int declarationId, int classeurId, string authToken, string nomFichier = null)
+        public void SetDocumentInfo(int declarationId, int classeurId, string authToken, string nomFichier = null, string uploadTypeParam = "document", int idMinistereParam = 0)
         {
             if (txtIdDeclaration.InvokeRequired)
             {
@@ -910,8 +1225,10 @@ namespace WindowScan
                     txtIdClasseur.Text = classeurId.ToString();
                     txtToken.Text = authToken;
                     nom_fichier = nomFichier;
+                    uploadType = uploadTypeParam;
+                    idMinistere = idMinistereParam;
                     UpdateApiConfiguration();
-                    SafeLog($"üìã Infos document re√ßues: D√©claration={declarationId}, Classeur={classeurId}");
+                    SafeLog($"?? Infos document reÁues: DÈclaration={declarationId}, Classeur={classeurId}");
                 }));
             }
             else
@@ -920,8 +1237,10 @@ namespace WindowScan
                 txtIdClasseur.Text = classeurId.ToString();
                 txtToken.Text = authToken;
                 nom_fichier = nomFichier;
+                uploadType = uploadTypeParam;
+                idMinistere = idMinistereParam;
                 UpdateApiConfiguration();
-                SafeLog($"üìã Infos document re√ßues: D√©claration={declarationId}, Classeur={classeurId}");
+                SafeLog($"?? Infos document reÁues: DÈclaration={declarationId}, Classeur={classeurId}");
             }
         }
 
@@ -933,18 +1252,46 @@ namespace WindowScan
                 {
                     txtApiUrl.Text = apiUrl;
                     UpdateApiConfiguration();
-                    SafeLog($"üåê URL API mise √† jour: {apiUrl}");
+                    SafeLog($"?? URL API mise ‡ jour: {apiUrl}");
                 }));
             }
             else
             {
                 txtApiUrl.Text = apiUrl;
                 UpdateApiConfiguration();
-                SafeLog($"üåê URL API mise √† jour: {apiUrl}");
+                SafeLog($"?? URL API mise ‡ jour: {apiUrl}");
             }
         }
 
         public bool IsScanningActive => isScanning;
+
+        /// <summary>
+        /// Indique si un scanner WIA est rÈellement disponible (type Scanner
+        /// classique ou pilote eSCL/USB HP remontÈ en type non spÈcifiÈ).
+        /// </summary>
+        public bool IsScannerAvailable()
+        {
+            try
+            {
+                var deviceManager = new DeviceManager();
+                for (int i = 1; i <= deviceManager.DeviceInfos.Count; i++)
+                {
+                    var info = deviceManager.DeviceInfos[i];
+                    string name = "";
+                    try { name = info.Properties["Name"].get_Value()?.ToString() ?? ""; } catch { }
+
+                    bool isScannerType = info.Type == WiaDeviceType.ScannerDeviceType;
+                    bool looksLikeScanner =
+                        name.IndexOf("scan", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("laserjet", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("mfp", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (isScannerType || looksLikeScanner) return true;
+                }
+            }
+            catch { }
+            return false;
+        }
 
         private void ScanForm_Load_1(object sender, EventArgs e)
         {

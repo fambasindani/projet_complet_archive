@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import DetailModal from "../Modals/DetailModal";
 import ConfirmModal from "../Modals/ConfirmModal";
+import { SCANNER_SERVICE_URL } from "../config";
 const ScanViewers = ({ onDocumentScanned }) => {
   const [scannedPDFs, setScannedPDFs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,15 +23,15 @@ const ScanViewers = ({ onDocumentScanned }) => {
   // Vérifier le statut complet du scanner
   const checkScannerStatus = async () => {
     try {
-      const healthResponse = await axios.get("http://localhost:9000/health", {
+      const healthResponse = await axios.get(`${SCANNER_SERVICE_URL}/health`, {
         timeout: 3000
       });
       
-      const deviceResponse = await axios.get("http://localhost:9000/scanner-device", {
+      const deviceResponse = await axios.get(`${SCANNER_SERVICE_URL}/scanner-device`, {
         timeout: 3000
       });
       
-      const statusResponse = await axios.get("http://localhost:9000/status", {
+      const statusResponse = await axios.get(`${SCANNER_SERVICE_URL}/status`, {
         timeout: 3000
       });
       
@@ -70,7 +71,7 @@ const ScanViewers = ({ onDocumentScanned }) => {
       
       const scanModal = toast.info('Démarrage du scan');
 
-      const startResponse = await axios.post("http://localhost:9000/start-scan");
+      const startResponse = await axios.post(`${SCANNER_SERVICE_URL}/start-scan`);
       
       if (startResponse.data.status === 'success') {
         await monitorScanProgress(scanModal);
@@ -102,7 +103,7 @@ const ScanViewers = ({ onDocumentScanned }) => {
         }
 
         try {
-          const status = await axios.get("http://localhost:9000/status");
+          const status = await axios.get(`${SCANNER_SERVICE_URL}/status`);
           
           if (!status.data.data?.isScanning) {
             clearInterval(checkInterval);
@@ -110,7 +111,7 @@ const ScanViewers = ({ onDocumentScanned }) => {
             if (status.data.data?.lastError) {
               reject(new Error(status.data.data.lastError));
             } else {
-              const sessionsResponse = await axios.get("http://localhost:9000/list-sessions");
+              const sessionsResponse = await axios.get(`${SCANNER_SERVICE_URL}/list-sessions`);
               const sessions = sessionsResponse.data.data?.sessions || [];
               
               const recentSession = sessions
@@ -127,7 +128,7 @@ const ScanViewers = ({ onDocumentScanned }) => {
                 
                 
                 
-                setDetailItem(recentSession); ((result) => {
+                setDetailItem(recentSession).then((result) => {
                   if (result.isConfirmed) {
                     handleDownloadPDF(recentSession.sessionId, recentSession.fileName);
                   }
@@ -194,7 +195,7 @@ const ScanViewers = ({ onDocumentScanned }) => {
   const fetchScannedPDFs = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:9000/list-sessions");
+      const response = await axios.get(`${SCANNER_SERVICE_URL}/list-sessions`);
       
       if (response.data.status === 'success') {
         const sessions = response.data.data?.sessions || [];
@@ -231,7 +232,7 @@ const ScanViewers = ({ onDocumentScanned }) => {
   const showPdfInModal = async (sessionId, fileName) => {
     try {
       toast.info('Chargement...');
-      const response = await axios.get(`http://localhost:9000/download/${sessionId}`, {
+      const response = await axios.get(`${SCANNER_SERVICE_URL}/download/${sessionId}`, {
         responseType: 'blob'
       });
       const blob = response.data;
@@ -252,7 +253,7 @@ const ScanViewers = ({ onDocumentScanned }) => {
       // Afficher un indicateur de chargement
       toast.info('Téléchargement...');
 
-      const response = await axios.get(`http://localhost:9000/download/${sessionId}`, {
+      const response = await axios.get(`${SCANNER_SERVICE_URL}/download/${sessionId}`, {
         responseType: 'blob'
       });
       

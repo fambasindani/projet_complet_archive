@@ -47,3 +47,4 @@ class Declaration extends Model
         return $this->hasMany(DocumentDeclaration::class, 'id_declaration');
     }
 }
+

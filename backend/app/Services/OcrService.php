@@ -25,7 +25,7 @@ class OcrService
         }
 
         try {
-            $response = Http::timeout(120)
+            $response = Http::timeout(280)
                 ->attach('file', file_get_contents($filePath), basename($filePath))
                 ->withHeaders(['Authorization' => 'Bearer ' . $this->token])
                 ->post($this->ocrUrl);

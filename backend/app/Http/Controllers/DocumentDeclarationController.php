@@ -59,7 +59,9 @@ public function uploadMultiplex(Request $request)
 
     foreach ($request->file('files') as $file) {
 
-        $nomFichier = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+        if ($ext === '') $ext = 'pdf';
+        $nomFichier = Str::uuid() . '.' . $ext;
         $dossier = "document_declaration/" . ($request->id_classeur + 100);
 
         // 📁 stockage dans le dossier spécifique (ta logique conservée)
@@ -98,6 +100,52 @@ public function uploadMultiplex(Request $request)
 
 
     // 📥 Téléchargement du fichier PDF - sécurisé + vérif appartenance possible
+    /**
+     * Upload "brut" (contourne les WAF qui bloquent multipart).
+     * POST /documents-declaration/upload-raw?id_declaration=..&id_classeur=..&nom_fichier=..
+     * Le corps de la requete est le PDF brut (application/pdf).
+     */
+    public function uploadRaw(Request $request)
+    {
+        $idDeclaration = $request->query('id_declaration');
+        $idClasseur = $request->query('id_classeur');
+        $nomNative = $request->query('nom_fichier', 'scan.pdf');
+
+        if (!$idDeclaration || !$idClasseur) {
+            return response()->json(['success' => false, 'message' => 'Parametres manquants'], 422);
+        }
+        if (!\App\Models\Declaration::find($idDeclaration)) {
+            return response()->json(['success' => false, 'message' => 'Declaration introuvable'], 422);
+        }
+        if (!\App\Models\Classeur::find($idClasseur)) {
+            return response()->json(['success' => false, 'message' => 'Classeur introuvable'], 422);
+        }
+
+        $content = $request->getContent();
+        if (!$content) {
+            return response()->json(['success' => false, 'message' => 'Fichier vide'], 422);
+        }
+
+        $nomFichier = \Illuminate\Support\Str::uuid() . '.pdf';
+        $dossier = "document_declaration/" . ($idClasseur + 100);
+        \Illuminate\Support\Facades\Storage::put($dossier . '/' . $nomFichier, $content);
+        $filePath = storage_path("app/{$dossier}/{$nomFichier}");
+
+        $document = DocumentDeclaration::create([
+            'id_declaration' => $idDeclaration,
+            'id_classeur' => $idClasseur,
+            'nom_fichier' => $nomFichier,
+            'nom_native' => $nomNative,
+            'taille' => strlen($content),
+        ]);
+        $document->ocr_status = 'pending';
+        $document->save();
+
+        \App\Jobs\ProcessDocumentOcr::dispatch($document->id, $filePath);
+
+        return response()->json(['success' => true, 'documents' => [$document]], 201);
+    }
+
     public function download($id)
 {
     $document = DocumentDeclaration::findOrFail($id);
@@ -148,39 +196,30 @@ public function uploadMultiplex(Request $request)
         $errors = [];
 
         foreach ($request->file('files') as $file) {
-            $nomFichier = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $ext = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+        if ($ext === '') $ext = 'pdf';
+        $nomFichier = Str::uuid() . '.' . $ext;
             $dossier = "document_declaration/" . ($request->id_classeur + 100);
 
             $path = $file->storeAs($dossier, $nomFichier);
             $taille = $file->getSize();
             $filePath = storage_path("app/{$dossier}/{$nomFichier}");
 
-            $ocrResult = $ocrService->extractText($filePath);
-
-            if (!$ocrResult['success']) {
-                $ocrResult = $ocrService->extractText($filePath);
-            }
-
-            if (!$ocrResult['success']) {
-                if (file_exists($filePath)) unlink($filePath);
-                $errors[] = $file->getClientOriginalName() . ': OCR échoué - ' . ($ocrResult['message'] ?? 'inconnu');
-                continue;
-            }
-
+            // Enregistre le document IMMEDIATEMENT (sans attendre l'OCR)
             $document = DocumentDeclaration::create([
                 'id_declaration' => $request->id_declaration,
                 'id_classeur'    => $request->id_classeur,
                 'nom_fichier'    => $nomFichier,
                 'nom_native'     => $file->getClientOriginalName(),
                 'taille'         => $taille,
-                'montext'        => strip_tags($ocrResult['text']),
             ]);
-
-            $document->ocr_method = $ocrResult['method'] ?? null;
-            $document->ocr_status = 'completed';
+            $document->ocr_status = 'pending';
             $document->save();
-
             $documents[] = $document;
+
+            // OCR en arriere-plan via la file d'attente (worker separe) :
+            // le document apparait tout de suite, le serveur web n'est pas bloque.
+            \App\Jobs\ProcessDocumentOcr::dispatch($document->id, $filePath);
         }
 
         if (empty($documents) && !empty($errors)) {

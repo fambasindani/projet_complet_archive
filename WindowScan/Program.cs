@@ -21,10 +21,7 @@ namespace WindowScan
 
             try
             {
-                // Démarrer le serveur HTTP
                 StartHttpServer();
-
-                // Créer le formulaire principal
                 MainScannerForm = new ScanForm();
                 Application.Run(MainScannerForm);
             }
@@ -51,23 +48,22 @@ namespace WindowScan
                 _httpServerThread.IsBackground = true;
                 _httpServerThread.Start();
 
-                Console.WriteLine("🌐 Serveur HTTP démarré sur http://localhost:8081");
+                Console.WriteLine("Serveur HTTP demarre sur http://localhost:8081");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Erreur démarrage serveur HTTP: {ex.Message}");
+                Console.WriteLine($"Erreur demarrage serveur HTTP: {ex.Message}");
             }
         }
 
         private static void StopHttpServer()
         {
             _isRunning = false;
-
             if (_httpListener != null && _httpListener.IsListening)
             {
                 _httpListener.Stop();
                 _httpListener.Close();
-                Console.WriteLine("🌐 Serveur HTTP arrêté");
+                Console.WriteLine("Serveur HTTP arrete");
             }
         }
 
@@ -90,13 +86,13 @@ namespace WindowScan
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"⚠️ Erreur serveur HTTP: {ex.Message}");
+                        Console.WriteLine($"Erreur serveur HTTP: {ex.Message}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Erreur serveur HTTP: {ex.Message}");
+                Console.WriteLine($"Erreur serveur HTTP: {ex.Message}");
             }
         }
 
@@ -109,12 +105,10 @@ namespace WindowScan
                 var request = context.Request;
                 var response = context.Response;
 
-                // CORS headers
                 response.AppendHeader("Access-Control-Allow-Origin", "*");
                 response.AppendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
                 response.AppendHeader("Access-Control-Allow-Headers", "Content-Type");
 
-                // Handle preflight
                 if (request.HttpMethod == "OPTIONS")
                 {
                     response.StatusCode = 200;
@@ -130,55 +124,68 @@ namespace WindowScan
                     if (request.HttpMethod == "POST")
                     {
                         string requestBody;
-                        using (var reader = new System.IO.StreamReader(request.InputStream, request.ContentEncoding))
+                        using (var reader = new System.IO.StreamReader(request.InputStream, System.Text.Encoding.UTF8))
                         {
                             requestBody = reader.ReadToEnd();
                         }
 
-                        var data = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(requestBody);
-
                         switch (request.Url.LocalPath.ToLower())
                         {
                             case "/api/start":
-                                if (MainScannerForm != null)
-                                {
-                                    MainScannerForm.StartScan();
-                                    responseBody = "{\"success\":true,\"message\":\"Scan démarré\"}";
-                                }
-                                else
+                                if (MainScannerForm == null)
                                 {
                                     responseBody = "{\"success\":false,\"message\":\"Scanner non disponible\"}";
                                     statusCode = 503;
                                 }
+                                else if (!MainScannerForm.IsScannerAvailable())
+                                {
+                                    // Aucun scanner WIA present : on refuse le scan
+                                    // au lieu de repondre faussement "demarre".
+                                    responseBody = "{\"success\":false,\"message\":\"Aucun scanner detecte. Verifiez qu'il est branche et allume.\"}";
+                                    statusCode = 503;
+                                }
+                                else if (MainScannerForm.IsScanningActive)
+                                {
+                                    responseBody = "{\"success\":false,\"message\":\"Un scan est deja en cours\"}";
+                                    statusCode = 409;
+                                }
+                                else
+                                {
+                                    MainScannerForm.StartScan();
+                                    responseBody = "{\"success\":true,\"message\":\"Scan demarre\"}";
+                                }
                                 break;
 
                             case "/api/setinfo":
+                                dynamic data = null;
+                                try { data = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(requestBody); } catch { }
                                 if (MainScannerForm != null && data != null)
                                 {
                                     int docId = data.documentId ?? 0;
                                     int classeurId = data.classeurId ?? 0;
                                     string token = data.token ?? "";
                                     string nom_fichier = data.nom_fichier ?? "";
+                                    string uploadType = data.upload_type ?? "document";
+                                    int idMinistere = data.id_ministere ?? 0;
 
-                                    MainScannerForm.SetDocumentInfo(docId, classeurId, token, nom_fichier);
-                                    responseBody = "{\"success\":true,\"message\":\"Informations définies\"}";
+                                    MainScannerForm.SetDocumentInfo(docId, classeurId, token, nom_fichier, uploadType, idMinistere);
+                                    responseBody = "{\"success\":true,\"message\":\"Informations definies\"}";
                                 }
                                 else
                                 {
-                                    responseBody = "{\"success\":false,\"message\":\"Données invalides\"}";
+                                    responseBody = "{\"success\":false,\"message\":\"Donnees invalides\"}";
                                     statusCode = 400;
                                 }
                                 break;
 
-
-
-
                             case "/api/seturl":
-                                if (MainScannerForm != null && data != null)
+                                dynamic urlData = null;
+                                try { urlData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(requestBody); } catch { }
+                                if (MainScannerForm != null && urlData != null)
                                 {
-                                    string url = data.url ?? "";
+                                    string url = urlData.url ?? "";
                                     MainScannerForm.SetApiUrl(url);
-                                    responseBody = "{\"success\":true,\"message\":\"URL API définie\"}";
+                                    responseBody = "{\"success\":true,\"message\":\"URL API definie\"}";
                                 }
                                 else
                                 {
@@ -191,7 +198,8 @@ namespace WindowScan
                                 if (MainScannerForm != null)
                                 {
                                     bool isScanning = MainScannerForm.IsScanningActive;
-                                    responseBody = $"{{\"success\":true,\"scanning\":{isScanning.ToString().ToLower()},\"ready\":true}}";
+                                    bool scannerOk = MainScannerForm.IsScannerAvailable();
+                                    responseBody = $"{{\"success\":true,\"scanning\":{isScanning.ToString().ToLower()},\"ready\":{scannerOk.ToString().ToLower()},\"scanner\":{scannerOk.ToString().ToLower()}}}";
                                 }
                                 else
                                 {
@@ -201,7 +209,7 @@ namespace WindowScan
                                 break;
 
                             default:
-                                responseBody = "{\"success\":false,\"message\":\"Endpoint non trouvé\"}";
+                                responseBody = "{\"success\":false,\"message\":\"Endpoint non trouve\"}";
                                 statusCode = 404;
                                 break;
                         }
@@ -213,19 +221,34 @@ namespace WindowScan
                             case "/":
                             case "/api/ping":
                             case "/api/health":
-                                bool isScannerReady = MainScannerForm != null;
-                                responseBody = $"{{\"service\":\"window_scanner\",\"version\":\"1.0\",\"ready\":{isScannerReady.ToString().ToLower()},\"timestamp\":\"{DateTime.Now:o}\"}}";
+                                bool ready = MainScannerForm != null && MainScannerForm.IsScannerAvailable();
+                                responseBody = $"{{\"service\":\"window_scanner\",\"version\":\"1.0\",\"ready\":{ready.ToString().ToLower()},\"scanner\":{ready.ToString().ToLower()},\"timestamp\":\"{DateTime.Now:o}\"}}";
+                                break;
+
+                            case "/api/status":
+                                // Le front interroge /api/status en GET pour suivre l'etat du scan.
+                                if (MainScannerForm != null)
+                                {
+                                    bool isScanningG = MainScannerForm.IsScanningActive;
+                                    bool scannerOkG = MainScannerForm.IsScannerAvailable();
+                                    responseBody = $"{{\"success\":true,\"scanning\":{isScanningG.ToString().ToLower()},\"ready\":{scannerOkG.ToString().ToLower()},\"scanner\":{scannerOkG.ToString().ToLower()}}}";
+                                }
+                                else
+                                {
+                                    responseBody = "{\"success\":false,\"message\":\"Scanner non disponible\"}";
+                                    statusCode = 503;
+                                }
                                 break;
 
                             default:
-                                responseBody = "{\"success\":false,\"message\":\"Endpoint non trouvé\"}";
+                                responseBody = "{\"success\":false,\"message\":\"Endpoint non trouve\"}";
                                 statusCode = 404;
                                 break;
                         }
                     }
                     else
                     {
-                        responseBody = "{\"success\":false,\"message\":\"Méthode non supportée\"}";
+                        responseBody = "{\"success\":false,\"message\":\"Methode non supportee\"}";
                         statusCode = 405;
                     }
                 }
@@ -235,7 +258,6 @@ namespace WindowScan
                     statusCode = 500;
                 }
 
-                // Send response
                 response.StatusCode = statusCode;
                 response.ContentType = "application/json; charset=utf-8";
 
@@ -246,7 +268,7 @@ namespace WindowScan
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Erreur traitement requête: {ex.Message}");
+                Console.WriteLine($"Erreur traitement requete: {ex.Message}");
             }
         }
     }

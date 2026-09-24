@@ -25,3 +25,4 @@ class Log extends Model
         return $this->belongsTo(MonUtilisateur::class, 'user_id');
     }
 }
+

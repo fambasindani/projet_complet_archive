@@ -177,6 +177,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // --- Document Déclaration (PDF + OCR) ---
     Route::post('/documents-declaration/upload-multiple', [DocumentDeclarationController::class, 'uploadMultiple']);
+Route::post('/documents-declaration/upload-raw', [DocumentDeclarationController::class, 'uploadRaw']);
     Route::put('/documents-declaration/{id}/update-text', [DocumentDeclarationController::class, 'updateOCRText']);
     Route::get('/documents-declaration/{id}/text', [DocumentDeclarationController::class, 'getDocumentText']);
     Route::post('/documents-declaration/advanced-search/{id_direction}', [DocumentDeclarationController::class, 'advancedSearch']);
@@ -268,5 +269,7 @@ Route::withoutMiddleware(\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequests
     Route::get('/notes/download/{id}', [DocumentNotePerceptionController::class, 'getallpdf']);
     Route::delete('/notes/delete/{id}', [DocumentNotePerceptionController::class, 'deleteDocument']);
     Route::post('/notes/upload', [DocumentNotePerceptionController::class, 'uploadMultiple']);
+Route::post('/notes/upload-raw', [DocumentNotePerceptionController::class, 'uploadRaw']);
     Route::put('/notes/{id}/update-text', [DocumentNotePerceptionController::class, 'updateOCRText']);
 });
+

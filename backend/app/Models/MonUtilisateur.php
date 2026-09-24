@@ -12,7 +12,7 @@ class MonUtilisateur extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $table = 'monutilisateurs';
+    protected $table = 'MonUtilisateurs';
     
     protected $fillable = [
         'nom',

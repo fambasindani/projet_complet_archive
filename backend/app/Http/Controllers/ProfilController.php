@@ -115,7 +115,7 @@ class ProfilController extends Controller
     $rules = [
         'nom' => 'sometimes|string|max:50',
         'prenom' => 'sometimes|string|max:50',
-        'email' => 'sometimes|email|unique:monutilisateurs,email,' . $id,
+        'email' => 'sometimes|email|unique:MonUtilisateurs,email,' . $id,
         'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
     ];
 

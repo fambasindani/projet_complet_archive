@@ -826,7 +826,7 @@ const FormNote = ({
                     onUploadComplete={handleFilesUploadComplete}
                     token={token}
                     existingFiles={filePreviews}
-                    nom_fichier="note de perception"
+                    nom_fichier={monprojet || "note de perception"}
                     uploadType="note"
                 />
             )}

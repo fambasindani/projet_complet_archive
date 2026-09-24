@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Composant/Temps.jsx
 import { useEffect, useRef } from 'react';
+import { toast } from "./Toast";
 const IdleTimer = ({ timeout = 10 * 60 * 1000, onLogout }) => { // 1 minute pour test
   const timerRef = useRef(null);
   const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];

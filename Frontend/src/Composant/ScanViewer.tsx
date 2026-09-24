@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ConfirmModal from "../Modals/ConfirmModal";
+import { API_BASE_URL, SCANNER_SERVICE_URL } from "../config";
 const ScanViewer = () => {
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,7 +17,7 @@ const ScanViewer = () => {
     try {
       setLoading(true);
       // CORRECTION: Utiliser la nouvelle route /list
-      const response = await axios.get("http://localhost:8000/api/scans/list");
+      const response = await axios.get(`${API_BASE_URL}/scans/list`);
       
       if (response.data.status === 'success') {
         setScans(response.data.scans);
@@ -39,7 +40,7 @@ const ScanViewer = () => {
       toast.info('Veuillez placer les documents dans le scanner...');
 
       // 1. Démarrer le scan via l'application C#
-      const response = await axios.post("http://localhost:9000/start-scan");
+      const response = await axios.post(`${SCANNER_SERVICE_URL}/start-scan`);
       
       if (response.data.status === 'success') {
         toast.info('Scan en cours');
@@ -63,7 +64,7 @@ const ScanViewer = () => {
             await fetchScans();
             
             // Vérifier le statut de l'application C#
-            const statusResponse = await axios.get("http://localhost:9000/status");
+            const statusResponse = await axios.get(`${SCANNER_SERVICE_URL}/status`);
             
             if (!statusResponse.data.isScanning) {
               clearInterval(checkScanCompletion);
@@ -94,7 +95,7 @@ const ScanViewer = () => {
     try {
       // CORRECTION: Utiliser la nouvelle route de téléchargement
       const response = await axios.get(
-        `http://localhost:8000/api/scans/download/${scan.name}`,
+        `${API_BASE_URL}/scans/download/${scan.name}`,
         { 
           responseType: 'blob',
           headers: {
@@ -128,7 +129,7 @@ const ScanViewer = () => {
     if (result.isConfirmed) {
       try {
         // CORRECTION: Utiliser la nouvelle route de suppression par nom de fichier
-        await axios.delete(`http://localhost:8000/api/scans/delete/${scan.name}`);
+        await axios.delete(`${API_BASE_URL}/scans/delete/${scan.name}`);
         
         toast.success('Le scan a été supprimé avec succès.');
         

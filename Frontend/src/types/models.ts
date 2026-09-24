@@ -21,7 +21,7 @@ export interface Role {
   description: string | null;
   permissions?: Permission[];
   permissions_count?: number;
-  monutilisateurs_count?: number;
+  users_count?: number;
   created_at?: string;
   updated_at?: string;
 }

@@ -19,7 +19,7 @@ const FileUploadModal = ({ documentId, onClose, token, id_classeur, nom_fichier,
     const [confirmDelete, setConfirmDelete] = useState({ open: false, fileId: null, fileName: '' });
     const [confirmCancelScan, setConfirmCancelScan] = useState(false);
 
-    const scannerConfig = { apiUrl: API_BASE_URL, token, idDeclaration: documentId, idClasseur: id_classeur, nom_fichier };
+    const scannerConfig = { apiUrl: API_BASE_URL, token, idDeclaration: documentId, idClasseur: id_classeur, nom_fichier, uploadType, idMinistere: id_ministere };
     const pollingIntervalRef = useRef(null);
     const scanSafetyTimeoutRef = useRef(null);
 

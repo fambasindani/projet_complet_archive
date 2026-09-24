@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Departement;
-use App\Models\Monutilisateur;
+use App\Models\MonUtilisateur;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\LogHelper;
@@ -16,7 +16,7 @@ class DepartementController extends Controller
     // Liste des directions
     public function index(Request $request)
     {
-        $query = Departement::withCount('monutilisateurs');
+        $query = Departement::withCount(['MonUtilisateurs as users_count']);
         
         // Recherche
         if ($request->has('search') && !empty($request->search)) {
@@ -70,7 +70,7 @@ class DepartementController extends Controller
     // Voir les détails d'une direction
     public function show($id)
     {
-        $direction = Departement::with('monutilisateurs')->find($id);
+        $direction = Departement::with('MonUtilisateurs')->find($id);
         
         if (!$direction) {
             return response()->json([
@@ -116,7 +116,7 @@ class DepartementController extends Controller
 
         LogHelper::update('departements', $direction->id, 'Modification de la direction : ' . $direction->nom . ' (' . $direction->sigle . ')');
         
-        $direction->load('monutilisateurs');
+        $direction->load('MonUtilisateurs');
         
         return response()->json([
             'success' => true,
@@ -138,7 +138,7 @@ class DepartementController extends Controller
         }
         
         // Vérifier si la direction a des utilisateurs assignés
-        if ($direction->monutilisateurs()->count() > 0) {
+        if ($direction->MonUtilisateurs()->count() > 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Impossible de supprimer cette direction car elle a des utilisateurs assignés'
@@ -158,7 +158,7 @@ class DepartementController extends Controller
     // Obtenir les détails complets d'une direction
     public function getWithDetails($id)
     {
-        $direction = Departement::with('monutilisateurs')->find($id);
+        $direction = Departement::with('MonUtilisateurs')->find($id);
         
         if (!$direction) {
             return response()->json([
@@ -191,7 +191,7 @@ class DepartementController extends Controller
             ->pluck('user_id');
         
         // Utilisateurs disponibles (non assignés)
-        $availableUsers = Monutilisateur::whereNotIn('id', $assignedUserIds)
+        $availableUsers = MonUtilisateur::whereNotIn('id', $assignedUserIds)
             ->where('statut', 'active')
             ->select('id', 'nom', 'prenom', 'email', 'statut')
             ->get();
@@ -219,7 +219,7 @@ class DepartementController extends Controller
             ], 404);
         }
         
-        $user = Monutilisateur::find($userId);
+        $user = MonUtilisateur::find($userId);
         
         if (!$user) {
             return response()->json([
@@ -242,9 +242,9 @@ class DepartementController extends Controller
         }
         
         // Assigner l'utilisateur
-        $direction->monutilisateurs()->attach($userId);
+        $direction->MonUtilisateurs()->attach($userId);
         
-        $direction->load('monutilisateurs');
+        $direction->load('MonUtilisateurs');
         
         return response()->json([
             'success' => true,
@@ -265,7 +265,7 @@ class DepartementController extends Controller
             ], 404);
         }
         
-        $user = Monutilisateur::find($userId);
+        $user = MonUtilisateur::find($userId);
         
         if (!$user) {
             return response()->json([
@@ -275,9 +275,9 @@ class DepartementController extends Controller
         }
         
         // Retirer l'utilisateur
-        $direction->monutilisateurs()->detach($userId);
+        $direction->MonUtilisateurs()->detach($userId);
         
-        $direction->load('monutilisateurs');
+        $direction->load('MonUtilisateurs');
         
         return response()->json([
             'success' => true,
@@ -387,3 +387,4 @@ class DepartementController extends Controller
 
 
 }
+

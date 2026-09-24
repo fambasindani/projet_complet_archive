@@ -56,3 +56,4 @@ public function documents()
     return $this->hasMany(DocumentNotePerception::class, 'id_note_perception', 'id');
 }
 }
+

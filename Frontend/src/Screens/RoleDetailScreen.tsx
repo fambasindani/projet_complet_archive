@@ -101,9 +101,9 @@ const RoleDetailScreen = () => {
   };
 
   const getUserCount = () => {
-    if (role.monutilisateurs_count !== undefined) return role.monutilisateurs_count;
     if (role.users_count !== undefined) return role.users_count;
-    if (role.monutilisateurs && Array.isArray(role.monutilisateurs)) return role.monutilisateurs.length;
+    if (role.users_count !== undefined) return role.users_count;
+    if (role.mon_utilisateurs && Array.isArray(role.mon_utilisateurs)) return role.mon_utilisateurs.length;
     if (role.users && Array.isArray(role.users)) return role.users.length;
     return 0;
   };
@@ -113,7 +113,7 @@ const RoleDetailScreen = () => {
     return 0;
   };
   const getUsers = () => {
-    if (role.monutilisateurs && Array.isArray(role.monutilisateurs)) return role.monutilisateurs;
+    if (role.mon_utilisateurs && Array.isArray(role.mon_utilisateurs)) return role.mon_utilisateurs;
     if (role.users && Array.isArray(role.users)) return role.users;
     return [];
   };

@@ -34,24 +34,16 @@ class DocumentNotePerceptionController extends Controller
         $errors = [];
 
         foreach ($request->file('files') as $file) {
-            $nomFichier = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $ext = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+            if ($ext === '') $ext = 'pdf';
+            $nomFichier = Str::uuid() . '.' . $ext;
             $dossier = "document_noteperception/" . ($request->id_classeur + 100) . "/" . ($request->id_ministere + 100);
 
             $file->storeAs($dossier, $nomFichier);
 
             $filePath = storage_path("app/{$dossier}/{$nomFichier}");
-            $ocrResult = $ocrService->extractText($filePath);
 
-            if (!$ocrResult['success']) {
-                $ocrResult = $ocrService->extractText($filePath);
-            }
-
-            if (!$ocrResult['success']) {
-                if (file_exists($filePath)) unlink($filePath);
-                $errors[] = $file->getClientOriginalName() . ': OCR échoué - ' . ($ocrResult['message'] ?? 'inconnu');
-                continue;
-            }
-
+            // Enregistre le document IMMEDIATEMENT puis OCR en arriere-plan (job).
             $document = DocumentNotePerception::create([
                 'id_note_perception' => $request->id_note_perception,
                 'id_classeur' => $request->id_classeur,
@@ -59,10 +51,9 @@ class DocumentNotePerceptionController extends Controller
                 'nom_fichier' => $nomFichier,
                 'nom_native' => $file->getClientOriginalName(),
                 'taille' => $file->getSize(),
-                'montext' => strip_tags($ocrResult['text']),
             ]);
-
             $documents[] = $document;
+            \App\Jobs\ProcessNoteOcr::dispatch($document->id, $filePath);
         }
 
         if (empty($documents) && !empty($errors)) {
@@ -82,6 +73,45 @@ class DocumentNotePerceptionController extends Controller
     }
 
     // 📥 Télécharger un fichier PDF
+    /**
+     * Upload "brut" pour les notes (contourne les WAF bloquant multipart).
+     * POST /notes/upload-raw?id_note_perception=..&id_classeur=..&id_ministere=..&nom_fichier=..
+     */
+    public function uploadRaw(Request $request)
+    {
+        $idNote = $request->query('id_note_perception');
+        $idClasseur = $request->query('id_classeur');
+        $idMinistere = $request->query('id_ministere', 0);
+        $nomNative = $request->query('nom_fichier', 'scan.pdf');
+
+        if (!$idNote || !$idClasseur || !$idMinistere) {
+            return response()->json(['success' => false, 'message' => 'Parametres manquants'], 422);
+        }
+
+        $content = $request->getContent();
+        if (!$content) {
+            return response()->json(['success' => false, 'message' => 'Fichier vide'], 422);
+        }
+
+        $nomFichier = \Illuminate\Support\Str::uuid() . '.pdf';
+        $dossier = "document_noteperception/" . ($idClasseur + 100) . "/" . ($idMinistere + 100);
+        \Illuminate\Support\Facades\Storage::put($dossier . '/' . $nomFichier, $content);
+        $filePath = storage_path("app/{$dossier}/{$nomFichier}");
+
+        $document = DocumentNotePerception::create([
+            'id_note_perception' => $idNote,
+            'id_classeur' => $idClasseur,
+            'id_ministere' => $idMinistere,
+            'nom_fichier' => $nomFichier,
+            'nom_native' => $nomNative,
+            'taille' => strlen($content),
+        ]);
+
+        \App\Jobs\ProcessNoteOcr::dispatch($document->id, $filePath);
+
+        return response()->json(['success' => true, 'documents' => [$document]], 201);
+    }
+
     public function download($id)
     {
         $document = DocumentNotePerception::findOrFail($id);

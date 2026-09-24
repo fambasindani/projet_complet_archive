@@ -374,7 +374,9 @@ public function createdeclarations(Request $request)
             ]);
 
             foreach ($request->file('files') as $file) {
-                $nomFichier = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                $ext = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+                if ($ext === '') $ext = 'pdf';
+                $nomFichier = Str::uuid() . '.' . $ext;
                 $dossier = "document_declaration/" . ($request->id_classeur + 100);
 
                 // Stockage du fichier
